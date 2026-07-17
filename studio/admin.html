@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Control Room — At Dawn Studio</title>
+<link rel="stylesheet" href="studio.css" />
+<style>
+	body { height: 100vh; overflow: hidden; }
+
+	/* ----- login ----- */
+	#loginScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 100; padding: 20px; }
+	.loginCard { max-width: 380px; width: 100%; padding: 34px; }
+
+	/* ----- app shell ----- */
+	#app { display: flex; height: 100vh; }
+	#sidebar {
+		width: 232px; flex: none; background: var(--bg-soft); border-right: 1px solid var(--border);
+		display: flex; flex-direction: column; padding: 18px 12px;
+	}
+	#sidebar .brandmark { padding: 0 10px 4px 10px; font-size: 1rem; }
+	#sidebar .evName { padding: 0 10px 16px 10px; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+	.navItem {
+		display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 9px;
+		color: var(--text-dim); font-weight: 600; font-size: 0.92rem; cursor: pointer; border: none;
+		background: none; text-align: left; width: 100%; margin-bottom: 3px;
+	}
+	.navItem:hover { background: var(--panel); color: var(--text); }
+	.navItem.active { background: var(--panel-2); color: var(--text); }
+	.navItem .badge {
+		margin-left: auto; background: var(--warn); color: #201500; border-radius: 999px;
+		font-size: 0.72rem; font-weight: 800; padding: 2px 8px; display: none;
+	}
+	.navItem .badge.show { display: inline-block; animation: pulse 1.5s infinite; }
+	#sidebar .foot { margin-top: auto; padding: 10px; }
+
+	/* ----- views ----- */
+	#main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+	.view { flex: 1; min-height: 0; display: none; }
+	.view.active { display: flex; flex-direction: column; }
+	.view.pad { padding: 26px; overflow-y: auto; display: none; }
+	.view.pad.active { display: block; }
+
+	.viewHead { display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--border); flex: none; }
+	.viewHead h2 { margin: 0; font-size: 1rem; }
+	.viewHead .spacer { flex: 1; }
+	.frameWrap { flex: 1; min-height: 0; position: relative; background: #000; }
+	.frameWrap iframe { position: absolute; inset: 0; }
+
+	/* ----- overview ----- */
+	.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px; max-width: 1200px; }
+	.linkRow { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+	.linkRow .desc { flex: 1; min-width: 0; }
+	.linkRow .desc b { display: block; font-size: 0.92rem; }
+	.linkRow .desc span { color: var(--text-dim); font-size: 0.78rem; }
+
+	/* ----- guest cards ----- */
+	#guestBoard { margin-top: 24px; max-width: 1200px; }
+	.roomCol h3 { font-size: 0.85rem; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+	.roomCol h3 .cnt { background: var(--panel-2); border: 1px solid var(--border); padding: 1px 9px; border-radius: 999px; font-size: 0.75rem; }
+	.colTools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+	.btn.talk.active { background: var(--accent-grad); border: none; color: #1a1006; box-shadow: 0 0 14px rgba(245, 160, 90, 0.5); }
+	.guestCard {
+		display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border);
+		border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; flex-wrap: wrap;
+	}
+	.guestCard.queued { border-color: rgba(245, 193, 90, 0.5); }
+	.guestCard.hand { border-color: var(--warn); box-shadow: 0 0 14px rgba(245, 193, 90, 0.25); }
+	.guestCard.whispering { border-color: var(--accent); box-shadow: 0 0 14px rgba(245, 160, 90, 0.35); }
+	.guestCard .who { min-width: 140px; flex: 1; }
+	.guestCard .who b { display: block; font-size: 0.95rem; }
+	.guestCard .who span { font-size: 0.75rem; color: var(--text-dim); }
+	.guestCard .who .note { display: block; font-size: 0.75rem; color: var(--warn); font-style: italic; }
+	.guestCard .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+	.guestCard .acts .btn.sm.active { border-color: var(--accent); color: var(--accent); background: #2b2113; }
+	.hdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+	.hdot.g { background: var(--good); } .hdot.y { background: var(--warn); }
+	.hdot.r { background: var(--live); animation: pulse 1.2s infinite; } .hdot.u { background: #4a5468; }
+	.emptyNote { color: var(--text-dim); font-size: 0.85rem; padding: 14px; border: 1px dashed var(--border); border-radius: 10px; }
+
+	/* ----- popover menu ----- */
+	#popMenu {
+		position: fixed; z-index: 300; background: var(--panel-2); border: 1px solid #35405a;
+		border-radius: 10px; box-shadow: var(--shadow); padding: 6px; min-width: 170px; display: none;
+	}
+	#popMenu button {
+		display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text);
+		padding: 9px 12px; border-radius: 7px; font-size: 0.88rem; cursor: pointer; font-family: inherit;
+	}
+	#popMenu button:hover { background: #2b3550; }
+
+	.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+	@media (max-width: 900px) { .twoCol { grid-template-columns: 1fr; } }
+
+	code.snippet { display: block; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.78rem; overflow-x: auto; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+	<div class="card loginCard">
+		<div class="brandmark"><span class="sun"></span> <span id="brandLogin">At Dawn Studio</span></div>
+		<h2 style="margin-top:18px">Control Room</h2>
+		<p class="muted small">Producer &amp; admin access only.</p>
+		<div class="field" style="margin-top:18px">
+			<label for="adminPwd">ADMIN PASSWORD</label>
+			<input type="password" id="adminPwd" autocomplete="current-password" />
+		</div>
+		<button class="btn primary block" id="loginBtn">Enter Control Room</button>
+		<div id="loginErr" class="small" style="color:#ff9b9b; margin-top:12px;"></div>
+	</div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+	<div id="sidebar">
+		<div class="brandmark"><span class="sun"></span> <span id="brandSide">At Dawn Studio</span></div>
+		<div class="evName" id="sideEventName"></div>
+		<button class="navItem active" data-view="overview">🏠 Overview &amp; Links</button>
+		<button class="navItem" data-view="green">🛋️ Green Room <span class="badge" id="greenBadge">0</span></button>
+		<button class="navItem" data-view="mainstage">📡 Main Broadcast</button>
+		<button class="navItem" data-view="settings">⚙️ Settings</button>
+		<div class="foot">
+			<button class="btn sm block" id="logoutBtn">Log out</button>
+		</div>
+	</div>
+
+	<div id="main">
+		<!-- ---------- OVERVIEW ---------- -->
+		<div class="view pad active" id="view-overview">
+			<h2 style="margin-bottom:20px">Overview &amp; Links</h2>
+			<div class="grid">
+				<div class="card">
+					<h3>🔗 Invite people</h3>
+					<div class="linkRow">
+						<div class="desc"><b>Guest invite link</b><span>Send to guests — name prompt, waiting room, green room</span></div>
+						<button class="btn sm primary" data-copy="guest">Copy</button>
+					</div>
+					<div class="linkRow">
+						<div class="desc"><b>Co-producer dashboard</b><span>This control room — they log in with the admin password</span></div>
+						<button class="btn sm" data-copy="admin">Copy</button>
+					</div>
+					<hr class="sep" />
+					<label class="checkline"><input type="checkbox" id="askPwdChk" /> Guests must type the event password (don't embed it in the link)</label>
+				</div>
+
+				<div class="card">
+					<h3>🎬 OBS browser sources</h3>
+					<div class="linkRow">
+						<div class="desc"><b>Main broadcast — full mix</b><span>Auto-mixed scene of everyone in the main room</span></div>
+						<button class="btn sm primary" data-copy="sceneMain">Copy</button>
+					</div>
+					<div class="linkRow">
+						<div class="desc"><b>Green room — full mix</b><span>Monitor or program feed of the green room</span></div>
+						<button class="btn sm" data-copy="sceneGreen">Copy</button>
+					</div>
+					<p class="small muted" style="margin-top:10px">Per-guest solo feeds: use the <b>Solo link</b> button on any guest below. In OBS set sources to 1920×1080 and check "Control audio via OBS".</p>
+					<hr class="sep" />
+					<label class="checkline" style="margin-bottom:8px"><input type="checkbox" id="labelsChk" /> Show name labels on the OBS mixes</label>
+					<label class="checkline"><input type="checkbox" id="autoRecChk" /> Auto-record every guest while they're on air (saves to this computer)</label>
+				</div>
+			</div>
+
+			<div id="guestBoard">
+				<div class="twoCol">
+					<div class="roomCol">
+						<h3>🛋️ Green room <span class="cnt" id="cntGreen">0</span></h3>
+						<div class="colTools">
+							<button class="btn sm talk" data-room="green" data-tool="talk" title="Your voice to everyone in the green room — never reaches the stream">🎙️ Talk</button>
+							<button class="btn sm" data-room="green" data-tool="cueAll" title="Send an on-screen message to everyone here">📣 Cue all</button>
+							<button class="btn sm" data-room="green" data-tool="timer" title="Show a countdown on everyone's screen">⏱ Timer</button>
+							<button class="btn sm" data-room="green" data-tool="muteAll" title="Cut every mic in this room">🔇 Mute all</button>
+							<button class="btn sm" data-room="green" data-tool="unmuteAll" title="Open every mic in this room">🔊 Unmute</button>
+						</div>
+						<div id="listGreen"><div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div></div>
+					</div>
+					<div class="roomCol">
+						<h3>📡 Main broadcast <span class="cnt" id="cntMain">0</span></h3>
+						<div class="colTools">
+							<button class="btn sm talk" data-room="main" data-tool="talk" title="Your voice to everyone on air (guests only — the stream never hears you)">🎙️ Talk</button>
+							<button class="btn sm" data-room="main" data-tool="cueAll" title="Send an on-screen message to everyone here">📣 Cue all</button>
+							<button class="btn sm" data-room="main" data-tool="timer" title="Show a countdown on everyone's screen">⏱ Timer</button>
+							<button class="btn sm" data-room="main" data-tool="muteAll" title="Panic button: cut every mic on air">🔇 Mute all</button>
+							<button class="btn sm" data-room="main" data-tool="unmuteAll" title="Open every mic in this room">🔊 Unmute</button>
+						</div>
+						<div id="listMain"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
+					</div>
+				</div>
+			</div>
+			<div id="popMenu"></div>
+		</div>
+
+		<!-- ---------- GREEN ROOM DIRECTOR ---------- -->
+		<div class="view" id="view-green">
+			<div class="viewHead">
+				<h2>🛋️ Green Room — full director controls</h2>
+				<div class="spacer"></div>
+				<span class="muted small">Use ✚ Activate on a guest tile to admit them from the waiting room</span>
+				<button class="btn sm" id="popGreen">Pop out ↗</button>
+			</div>
+			<div class="frameWrap"><iframe id="dirGreen" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
+		</div>
+
+		<!-- ---------- MAIN STAGE DIRECTOR ---------- -->
+		<div class="view" id="view-mainstage">
+			<div class="viewHead">
+				<h2>📡 Main Broadcast — full director controls</h2>
+				<div class="spacer"></div>
+				<button class="btn sm" id="popMain">Pop out ↗</button>
+			</div>
+			<div class="frameWrap"><iframe id="dirMain" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
+		</div>
+
+		<!-- ---------- SETTINGS ---------- -->
+		<div class="view pad" id="view-settings">
+			<h2 style="margin-bottom:20px">Settings</h2>
+			<div class="grid">
+				<div class="card">
+					<h3>Event setup</h3>
+					<p class="small muted">Room names may only contain letters, numbers and underscores. Both rooms share one password (required so guests can be moved between them).</p>
+					<div class="field"><label>EVENT NAME</label><input type="text" id="setName" /></div>
+					<div class="field"><label>GREEN ROOM ID</label><input type="text" id="setGreen" /></div>
+					<div class="field"><label>MAIN BROADCAST ROOM ID</label><input type="text" id="setMain" /></div>
+					<div class="field"><label>ROOM PASSWORD</label><input type="text" id="setPwd" /></div>
+					<button class="btn primary" id="saveSettings">Save &amp; reconnect rooms</button>
+					<button class="btn" id="newEventBtn" title="Generates fresh room names — old links stop working">↻ New event (fresh rooms)</button>
+				</div>
+				<div class="card">
+					<h3>Admin password</h3>
+					<p class="small muted">The dashboard password is stored as a hash in <span class="mono">studio/config.js</span>. Generate a new hash here, then paste it into that file on your server.</p>
+					<div class="field"><label>NEW ADMIN PASSWORD</label><input type="text" id="newAdminPwd" /></div>
+					<button class="btn" id="genHashBtn">Generate hash</button>
+					<div id="hashOut" class="hidden">
+						<code class="snippet" id="hashSnippet"></code>
+						<button class="btn sm" id="copyHashBtn">Copy line</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+"use strict";
+(() => {
+	const $ = id => document.getElementById(id);
+	const CFG = Studio.CFG;
+	$("brandLogin").textContent = $("brandSide").textContent = CFG.brandName || "Studio";
+
+	/* ================= EVENT CONFIG ================= */
+	const LS_KEY = "studio_event_v1";
+	let EV = null;
+	function loadEvent() {
+		try { EV = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) {}
+		if (!EV || !EV.green || !EV.main) {
+			const d = CFG.defaults || {};
+			EV = {
+				name: d.eventName || "Live Event",
+				green: Studio.sanitizeId(d.greenRoom) || "green_" + Studio.randId(5),
+				main: Studio.sanitizeId(d.mainRoom) || "main_" + Studio.randId(5),
+				pwd: d.roomPassword || Studio.randId(8),
+				ask: !!d.requirePasswordEntry
+			};
+			saveEvent();
+		}
+	}
+	function saveEvent() { localStorage.setItem(LS_KEY, JSON.stringify(EV)); }
+	function cdPass() { return "cd_" + (EV.pwd || "x"); } // shared co-director password → extra dashboards become co-directors
+
+	/* ================= LOGIN ================= */
+	async function tryLogin() {
+		const pwd = $("adminPwd").value;
+		if (!pwd) return;
+		const hash = await Studio.sha256Hex(pwd);
+		if (hash === CFG.adminPasswordHash) {
+			sessionStorage.setItem("studio_admin_ok", "1");
+			startApp();
+		} else {
+			$("loginErr").textContent = "Wrong password.";
+		}
+	}
+	$("loginBtn").addEventListener("click", tryLogin);
+	$("adminPwd").addEventListener("keydown", e => { if (e.key === "Enter") tryLogin(); });
+	$("logoutBtn").addEventListener("click", () => { sessionStorage.removeItem("studio_admin_ok"); location.reload(); });
+
+	/* ================= APP ================= */
+	let pollTimer = null;
+
+	function startApp() {
+		loadEvent();
+		$("loginScreen").classList.add("hidden");
+		$("app").classList.remove("hidden");
+		renderEventInfo();
+		mountDirectors();
+		if (pollTimer) clearInterval(pollTimer);
+		pollTimer = setInterval(refreshGuests, 2000);
+	}
+
+	function renderEventInfo() {
+		$("sideEventName").textContent = EV.name + " · " + EV.green + " → " + EV.main;
+		$("askPwdChk").checked = !!EV.ask;
+		$("labelsChk").checked = !!EV.labels;
+		$("autoRecChk").checked = !!EV.autoRec;
+		$("setName").value = EV.name;
+		$("setGreen").value = EV.green;
+		$("setMain").value = EV.main;
+		$("setPwd").value = EV.pwd;
+	}
+
+	function directorUrl(room) {
+		// push id "dir_<room>_<rand>": guests identify which room they're in by this
+		// prefix (see join.html). Random suffix so co-producer dashboards never collide.
+		return Studio.buildUrl(Studio.vdoBase(), {
+			director: room,
+			push: "dir_" + room + "_" + Studio.randId(4),
+			label: "Control Room",
+			password: EV.pwd || false,
+			codirector: cdPass(),
+			hidetranslate: null,
+			tips: 0
+		});
+	}
+	function mountDirectors() {
+		$("dirGreen").src = directorUrl(EV.green);
+		$("dirMain").src = directorUrl(EV.main);
+		talk.green = talk.main = "off"; // fresh frames = mic state reset
+		renderTalkButtons();
+	}
+	// pop-outs get a fresh push id so they can coexist with the embedded director
+	$("popGreen").addEventListener("click", () => window.open(directorUrl(EV.green), "_blank"));
+	$("popMain").addEventListener("click", () => window.open(directorUrl(EV.main), "_blank"));
+
+	/* ================= NAV ================= */
+	document.querySelectorAll(".navItem").forEach(btn => {
+		btn.addEventListener("click", () => {
+			document.querySelectorAll(".navItem").forEach(b => b.classList.remove("active"));
+			btn.classList.add("active");
+			document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+			$("view-" + btn.dataset.view).classList.add("active");
+		});
+	});
+
+	/* ================= LINKS ================= */
+	function guestLink() {
+		const payload = { v: 1, n: EV.name, b: CFG.brandName, g: EV.green, m: EV.main, ask: !!EV.ask };
+		if (!EV.ask) payload.p = EV.pwd;
+		return new URL("join.html?e=" + Studio.b64uEncode(payload), location.href).href;
+	}
+	function sceneLink(room) {
+		const p = { scene: null, room: room };
+		if (EV.pwd) p.password = EV.pwd;
+		if (EV.labels) { p.showlabels = null; p.fontsize = 6; }
+		return Studio.buildUrl(Studio.vdoAbsBase(), p);
+	}
+	function soloLink(sid, room) {
+		const p = { view: sid, solo: null, room: room };
+		if (EV.pwd) p.password = EV.pwd;
+		return Studio.buildUrl(Studio.vdoAbsBase(), p);
+	}
+	const LINKS = {
+		guest: () => guestLink(),
+		admin: () => new URL("admin.html", location.href).href,
+		sceneMain: () => sceneLink(EV.main),
+		sceneGreen: () => sceneLink(EV.green)
+	};
+	document.querySelectorAll("[data-copy]").forEach(btn => {
+		btn.addEventListener("click", async () => {
+			const ok = await Studio.copyText(LINKS[btn.dataset.copy]());
+			Studio.toast(ok ? "Link copied to clipboard" : "Copy failed — check browser permissions", !ok);
+		});
+	});
+	$("askPwdChk").addEventListener("change", () => {
+		EV.ask = $("askPwdChk").checked;
+		saveEvent();
+		Studio.toast(EV.ask ? "Guests will be asked for the password" : "Password is embedded in guest links");
+	});
+	$("labelsChk").addEventListener("change", () => {
+		EV.labels = $("labelsChk").checked;
+		saveEvent();
+		Studio.toast("Saved — re-copy the OBS links to apply");
+	});
+	$("autoRecChk").addEventListener("change", () => {
+		EV.autoRec = $("autoRecChk").checked;
+		saveEvent();
+		Studio.toast(EV.autoRec ? "Guests will auto-record while on air" : "Auto-record off");
+	});
+
+	/* ================= TALKBACK (producer voice — never reaches the stream) ================= */
+	// per-room talk state: "off" | "room" | "<uuid>" (whispering to one guest)
+	const talk = { green: "off", main: "off" };
+	function frameOf(room) { return room === "green" ? $("dirGreen") : $("dirMain"); }
+
+	// wait for the director's mic to come up (first use triggers the browser's mic permission prompt)
+	function ensureMic(w) {
+		return new Promise(resolve => {
+			if (w.session.directorEnabledPPT) { resolve(true); return; }
+			try { w.press2talk(true); } catch (e) { resolve(false); return; }
+			Studio.toast("Starting your mic — allow microphone access if prompted…");
+			let waited = 0;
+			const iv = setInterval(() => {
+				waited += 300;
+				if (w.session.directorEnabledPPT) { clearInterval(iv); resolve(true); }
+				else if (waited > 20000) { clearInterval(iv); resolve(false); }
+			}, 300);
+		});
+	}
+
+	async function setTalk(room, mode) {
+		const frame = frameOf(room);
+		let w = null;
+		try { w = frame.contentWindow; if (!w || !w.session) throw 0; } catch (e) { Studio.toast("That room isn't connected yet", true); return; }
+
+		// clear any active whispers in this room (unless re-targeting the same guest)
+		try {
+			(w.session.soloChatUUID || []).slice().forEach(u => { if (u !== mode) w.session.toggleSoloChat(u); });
+		} catch (e) {}
+
+		if (mode === "off") {
+			Studio.send(frame, { PPT: false }); // mute (stays ready for next time)
+			talk[room] = "off";
+		} else {
+			const ok = await ensureMic(w);
+			if (!ok) { Studio.toast("Couldn't start the microphone — check browser permissions", true); return; }
+			if (mode !== "room") {
+				try {
+					if (!(w.session.soloChatUUID || []).includes(mode)) w.session.toggleSoloChat(mode);
+				} catch (e) { Studio.toast("Whisper failed — try the full director view", true); return; }
+			}
+			Studio.send(frame, { PPT: true }); // open the mic
+			talk[room] = mode;
+			Studio.toast(mode === "room"
+				? "You're live to everyone in the " + (room === "green" ? "green room" : "broadcast room") + " (not the stream)"
+				: "Whispering — only this guest hears you");
+		}
+		renderTalkButtons();
+		lastSnapshot = ""; // force card re-render for whisper highlights
+		refreshGuests();
+	}
+
+	function renderTalkButtons() {
+		document.querySelectorAll('[data-tool="talk"]').forEach(btn => {
+			const mode = talk[btn.dataset.room];
+			btn.classList.toggle("active", mode !== "off");
+			btn.textContent = mode === "off" ? "🎙️ Talk" : (mode === "room" ? "🔴 Talking — stop" : "🎧 Whispering — stop");
+		});
+	}
+
+	/* ================= CUES & TIMERS ================= */
+	const CUES = ["You're next — get ready!", "30 seconds left", "Wrap it up please", "You're clear — thanks!", "Check your mic", "Look into the camera"];
+	function sendCueTo(frame, sid, text) {
+		Studio.send(frame, { action: "sendDirectorChat", target: sid, value: text });
+	}
+	function cueRoom(room, text) {
+		const frame = frameOf(room);
+		roomGuests(room).forEach(g => sendCueTo(frame, g.sid, text));
+		Studio.toast("Cue sent to " + (room === "green" ? "the green room" : "everyone on air"));
+	}
+	function timerRoom(room, secs) {
+		const frame = frameOf(room);
+		roomGuests(room).forEach(g => sendCueTo(frame, g.sid, "⏱ TIMER " + secs));
+		Studio.toast(secs > 0 ? "Countdown started on their screens" : "Timer cleared");
+	}
+	function roomGuests(room) { return room === "green" ? lastGreen : lastMain; }
+
+	/* ================= POPOVER MENU ================= */
+	function showMenu(anchor, items) {
+		const m = $("popMenu");
+		m.innerHTML = "";
+		items.forEach(it => {
+			const b = document.createElement("button");
+			b.textContent = it.label;
+			b.addEventListener("click", () => { hideMenu(); it.fn(); });
+			m.appendChild(b);
+		});
+		const r = anchor.getBoundingClientRect();
+		m.style.display = "block";
+		m.style.left = Math.max(8, Math.min(r.left, innerWidth - 210)) + "px";
+		m.style.top = Math.min(r.bottom + 6, innerHeight - items.length * 40 - 20) + "px";
+	}
+	function hideMenu() { $("popMenu").style.display = "none"; }
+	document.addEventListener("click", e => {
+		if (!e.target.closest("#popMenu") && !e.target.closest("[data-tool]") && !e.target.closest("[data-act]")) hideMenu();
+	});
+
+	/* ================= COLUMN TOOLBARS ================= */
+	document.querySelectorAll(".colTools .btn").forEach(btn => {
+		btn.addEventListener("click", () => {
+			const room = btn.dataset.room, tool = btn.dataset.tool, frame = frameOf(room);
+			if (tool === "talk") {
+				setTalk(room, talk[room] === "off" ? "room" : "off");
+			} else if (tool === "cueAll") {
+				showMenu(btn, CUES.map(c => ({ label: c, fn: () => cueRoom(room, "📣 " + c) }))
+					.concat([{ label: "Custom message…", fn: () => { const t = prompt("Message to everyone in this room:"); if (t) cueRoom(room, "📣 " + t); } }]));
+			} else if (tool === "timer") {
+				showMenu(btn, [["1 minute", 60], ["2 minutes", 120], ["5 minutes", 300], ["10 minutes", 600], ["Clear timer", 0]]
+					.map(([label, secs]) => ({ label, fn: () => timerRoom(room, secs) })));
+			} else if (tool === "muteAll") {
+				roomGuests(room).forEach(g => Studio.send(frame, { action: "mic", target: g.sid, value: false }));
+				Studio.toast("All mics cut in " + (room === "green" ? "the green room" : "the broadcast"));
+				setTimeout(refreshGuests, 800);
+			} else if (tool === "unmuteAll") {
+				roomGuests(room).forEach(g => Studio.send(frame, { action: "mic", target: g.sid, value: true }));
+				Studio.toast("All mics open");
+				setTimeout(refreshGuests, 800);
+			}
+		});
+	});
+
+	/* ================= NOTES & RECORDING ================= */
+	let NOTES = {};
+	try { NOTES = JSON.parse(localStorage.getItem("studio_notes_v1")) || {}; } catch (e) {}
+	function saveNotes() { localStorage.setItem("studio_notes_v1", JSON.stringify(NOTES)); }
+
+	const REC_KBPS = 6000; // recording bitrate; skips VDO's prompt
+	function toggleRecord(frame, sid) {
+		try {
+			const w = frame.contentWindow;
+			for (const uuid in w.session.rpcs) {
+				if (w.session.rpcs[uuid] && w.session.rpcs[uuid].streamID === sid) {
+					const el = w.document.querySelector('[data-action-type="recorder-local"][data--u-u-i-d="' + uuid + '"]');
+					if (el) { w.recordVideo(el, null, REC_KBPS); return true; }
+				}
+			}
+		} catch (e) { console.warn(e); }
+		return false;
+	}
+
+	const autoRecDone = new Set();
+	function maybeAutoRecord(main) {
+		const cur = new Set(main.map(g => g.sid));
+		[...autoRecDone].forEach(sid => { if (!cur.has(sid)) autoRecDone.delete(sid); });
+		if (!EV.autoRec) return;
+		main.forEach(g => {
+			if (g.recording) { autoRecDone.add(g.sid); return; }
+			if (!autoRecDone.has(g.sid)) toggleRecord($("dirMain"), g.sid); // retried next poll until the stream is ready
+		});
+	}
+
+	/* ================= GUEST BOARD ================= */
+	function healthOf(rpc) {
+		const st = rpc.stats || {};
+		const vb = st.video_bitrate_kbps, n = st.nacks_per_second, q = st.quality_limitation_reason;
+		if (vb === undefined && n === undefined) return "u";
+		if ((typeof n === "number" && n > 20) || vb === 0) return "r";
+		if ((typeof n === "number" && n > 5) || (q && q !== "none" && q !== false)) return "y";
+		return "g";
+	}
+	const HEALTH_TITLE = { g: "Connection: good", y: "Connection: struggling (watch this one)", r: "Connection: BAD — video degraded", u: "Connection: measuring…" };
+
+	// read guest state straight out of the same-origin director iframes
+	function readGuests(frame) {
+		const out = [];
+		try {
+			const w = frame.contentWindow;
+			if (!w || !w.session || !w.session.rpcs) return out;
+			const doc = w.document;
+			const solos = w.session.soloChatUUID || [];
+			for (const uuid in w.session.rpcs) {
+				const rpc = w.session.rpcs[uuid];
+				if (!rpc || !rpc.streamID) continue;
+				const rq = doc.querySelector('[data-action-type="remove-queue"][data--u-u-i-d="' + uuid + '"]');
+				const hand = doc.querySelector('[data-action-type="hand-raised"][data--u-u-i-d="' + uuid + '"]');
+				out.push({
+					uuid,
+					sid: rpc.streamID,
+					label: rpc.label || rpc.streamID,
+					queued: !!(rq && !rq.classList.contains("hidden")),
+					handUp: !!(hand && !hand.classList.contains("hidden")),
+					micMuted: rpc.directorMutedState == 1,
+					recording: !!(rpc.videoElement && rpc.videoElement.recording),
+					whisper: solos.includes(uuid),
+					health: healthOf(rpc),
+					note: NOTES[rpc.streamID] || ""
+				});
+			}
+		} catch (e) { /* iframe still loading / cross-origin */ }
+		return out;
+	}
+
+	function guestCardHtml(g, room) {
+		const other = room === "green" ? "main" : "green";
+		const otherLabel = room === "green" ? "🚀 Send to broadcast" : "↩ Back to green room";
+		const badges = [
+			g.queued ? "⏳ waiting room" : "",
+			g.handUp ? "✋ HAND UP" : "",
+			g.recording ? "🔴 REC" : "",
+			g.micMuted ? "🔇 muted" : ""
+		].filter(Boolean).join(" · ");
+		return `<div class="guestCard ${g.queued ? "queued" : ""} ${g.handUp ? "hand" : ""} ${g.whisper ? "whispering" : ""}" data-sid="${g.sid}" data-uuid="${g.uuid}">
+			<div class="who">
+				<b><span class="hdot ${g.health}" title="${HEALTH_TITLE[g.health]}"></span>${escapeHtml(g.label)}</b>
+				<span class="mono">${g.sid}${badges ? " · " + badges : ""}</span>
+				${g.note ? `<span class="note">📝 ${escapeHtml(g.note)}</span>` : ""}
+			</div>
+			<div class="acts">
+				${g.queued ? `<button class="btn sm good" data-act="admit">✚ Admit</button>` : `<button class="btn sm primary" data-act="move" data-to="${other}">${otherLabel}</button>`}
+				<button class="btn sm ${g.whisper ? "active" : ""}" data-act="whisper" title="Whisper: only this guest hears you — never the stream">🎧</button>
+				<button class="btn sm" data-act="cue" title="Send an on-screen message to this guest">📣</button>
+				<button class="btn sm" data-act="mic" title="Toggle their microphone">${g.micMuted ? "🔇" : "🎙️"}</button>
+				<button class="btn sm" data-act="cam" title="Toggle their camera">🎥</button>
+				<button class="btn sm ${g.recording ? "active" : ""}" data-act="rec" title="Record this guest (saves to this computer)">⏺</button>
+				<button class="btn sm" data-act="solo" title="Copy OBS solo link for this guest">Solo link</button>
+				<button class="btn sm" data-act="note" title="Private note (only producers see it)">📝</button>
+				<button class="btn sm danger" data-act="kick" title="Disconnect this guest">✕</button>
+			</div>
+		</div>`;
+	}
+
+	function escapeHtml(s) {
+		return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+	}
+
+	let lastSnapshot = "";
+	let lastGreen = [], lastMain = [];
+	let statPump = 0;
+	function refreshGuests() {
+		// nudge fresh connection stats every ~8s so the health dots stay honest
+		if (++statPump % 4 === 0) {
+			Studio.send($("dirGreen"), { getRemoteStats: true });
+			Studio.send($("dirMain"), { getRemoteStats: true });
+		}
+		const green = lastGreen = readGuests($("dirGreen"));
+		const main = lastMain = readGuests($("dirMain"));
+		maybeAutoRecord(main);
+		const waiting = green.filter(g => g.queued).length;
+		const badge = $("greenBadge");
+		badge.textContent = waiting;
+		badge.classList.toggle("show", waiting > 0);
+		$("cntGreen").textContent = green.length;
+		$("cntMain").textContent = main.length;
+
+		const snap = JSON.stringify([green, main]);
+		if (snap === lastSnapshot) return; // avoid pointless re-render (keeps buttons clickable)
+		lastSnapshot = snap;
+
+		$("listGreen").innerHTML = green.length
+			? green.map(g => guestCardHtml(g, "green")).join("")
+			: '<div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div>';
+		$("listMain").innerHTML = main.length
+			? main.map(g => guestCardHtml(g, "main")).join("")
+			: '<div class="emptyNote">Nobody on air. Move guests here from the green room when it\'s showtime.</div>';
+	}
+
+	/* ---------- guest actions ---------- */
+	document.addEventListener("click", async e => {
+		const btn = e.target.closest("[data-act]");
+		if (!btn) return;
+		const card = btn.closest(".guestCard");
+		const sid = card.dataset.sid;
+		const inGreen = !!card.closest("#listGreen");
+		const frame = inGreen ? $("dirGreen") : $("dirMain");
+		const act = btn.dataset.act;
+
+		if (act === "admit") {
+			clickDirectorButton(frame, sid, "remove-queue");
+			Studio.toast("Guest admitted to the green room");
+		} else if (act === "whisper") {
+			const room = inGreen ? "green" : "main";
+			const uuid = card.dataset.uuid;
+			setTalk(room, talk[room] === uuid ? "off" : uuid);
+		} else if (act === "cue") {
+			const label = card.querySelector(".who b").textContent;
+			showMenu(btn, CUES.map(c => ({ label: c, fn: () => { sendCueTo(frame, sid, "📣 " + c); Studio.toast("Cue sent"); } }))
+				.concat([{ label: "Custom message…", fn: () => { const t = prompt("Message for " + label + ":"); if (t) { sendCueTo(frame, sid, "📣 " + t); Studio.toast("Cue sent"); } } }]));
+			return; // menu stays open; skip the refresh below
+		} else if (act === "note") {
+			const t = prompt("Private note for this guest (producers only):", NOTES[sid] || "");
+			if (t !== null) {
+				if (t.trim()) NOTES[sid] = t.trim(); else delete NOTES[sid];
+				saveNotes();
+				lastSnapshot = "";
+			}
+		} else if (act === "move") {
+			const toRoom = btn.dataset.to === "main" ? EV.main : EV.green;
+			Studio.send(frame, { action: "transfer", target: sid, value: toRoom });
+			Studio.toast("Moving guest to " + (btn.dataset.to === "main" ? "the broadcast" : "the green room") + "…");
+		} else if (act === "mic") {
+			Studio.send(frame, { action: "mic", target: sid });
+			Studio.toast("Toggled guest microphone");
+		} else if (act === "cam") {
+			Studio.send(frame, { action: "video", target: sid });
+			Studio.toast("Toggled guest camera");
+		} else if (act === "rec") {
+			if (toggleRecord(frame, sid)) Studio.toast("Toggled recording — files save to this computer's downloads");
+			else Studio.toast("Recording not available yet — is their video up?", true);
+		} else if (act === "solo") {
+			const ok = await Studio.copyText(soloLink(sid, inGreen ? EV.green : EV.main));
+			Studio.toast(ok ? "Solo link copied — paste into an OBS browser source" : "Copy failed", !ok);
+		} else if (act === "kick") {
+			if (!confirm("Disconnect this guest?")) return;
+			Studio.send(frame, { action: "hangup", target: sid });
+			Studio.toast("Guest disconnected");
+		}
+		setTimeout(refreshGuests, 600);
+	});
+
+	function clickDirectorButton(frame, sid, type) {
+		try {
+			const w = frame.contentWindow;
+			for (const uuid in w.session.rpcs) {
+				if (w.session.rpcs[uuid] && w.session.rpcs[uuid].streamID === sid) {
+					const el = w.document.querySelector('[data-action-type="' + type + '"][data--u-u-i-d="' + uuid + '"]');
+					if (el) { el.click(); return true; }
+				}
+			}
+		} catch (e) { console.warn(e); }
+		Studio.toast("Couldn't reach that control — try the full director view", true);
+		return false;
+	}
+
+	/* ================= SETTINGS ================= */
+	$("saveSettings").addEventListener("click", () => {
+		const name = $("setName").value.trim() || "Live Event";
+		const green = Studio.sanitizeId($("setGreen").value);
+		const main = Studio.sanitizeId($("setMain").value);
+		const pwd = $("setPwd").value.trim();
+		if (!green || !main) { Studio.toast("Room IDs can't be empty", true); return; }
+		if (green === main) { Studio.toast("The two rooms must have different IDs", true); return; }
+		EV.name = name; EV.green = green; EV.main = main; EV.pwd = pwd;
+		saveEvent();
+		renderEventInfo();
+		mountDirectors();
+		Studio.toast("Saved — rooms reconnected. Re-copy any links you had shared!");
+	});
+
+	$("newEventBtn").addEventListener("click", () => {
+		if (!confirm("Start a fresh event? New room names are generated and previously shared links will stop working.")) return;
+		EV.green = "green_" + Studio.randId(5);
+		EV.main = "main_" + Studio.randId(5);
+		EV.pwd = Studio.randId(8);
+		saveEvent();
+		renderEventInfo();
+		mountDirectors();
+		Studio.toast("Fresh rooms ready — copy the new guest link");
+	});
+
+	$("genHashBtn").addEventListener("click", async () => {
+		const p = $("newAdminPwd").value;
+		if (!p || p.length < 6) { Studio.toast("Use at least 6 characters", true); return; }
+		const h = await Studio.sha256Hex(p);
+		$("hashSnippet").textContent = 'adminPasswordHash: "' + h + '",';
+		$("hashOut").classList.remove("hidden");
+	});
+	$("copyHashBtn").addEventListener("click", async () => {
+		await Studio.copyText($("hashSnippet").textContent);
+		Studio.toast("Copied — paste it into studio/config.js on your server");
+	});
+
+	/* ================= BOOT ================= */
+	if (sessionStorage.getItem("studio_admin_ok") === "1") startApp();
+	else $("adminPwd").focus();
+})();
+</script>
+</body>
+</html>

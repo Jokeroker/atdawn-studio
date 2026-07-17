@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>At Dawn Studio</title>
+<link rel="stylesheet" href="studio.css" />
+<style>
+	body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+	.landing { max-width: 760px; width: 100%; text-align: center; }
+	.landing .brandmark { font-size: 1.6rem; justify-content: center; margin-bottom: 6px; }
+	.landing .tagline { color: var(--text-dim); margin-bottom: 42px; }
+	.choices { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+	.choice {
+		flex: 1 1 280px; max-width: 340px; padding: 34px 26px; cursor: pointer;
+		transition: transform 0.12s, border-color 0.12s; text-align: center;
+	}
+	.choice:hover { transform: translateY(-3px); border-color: var(--accent); }
+	.choice .icon { font-size: 2.4rem; margin-bottom: 12px; }
+	.choice h2 { font-size: 1.15rem; }
+	.choice p { color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; }
+	footer { margin-top: 48px; color: var(--text-dim); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div class="landing">
+	<div class="brandmark"><span class="sun"></span> At Dawn Studio</div>
+	<div class="tagline">Remote guest green room &amp; broadcast control</div>
+
+	<div class="choices">
+		<div class="card choice" onclick="location.href='join.html'">
+			<div class="icon">🎥</div>
+			<h2>I'm a Guest</h2>
+			<p>Joining a show? Use the personal invite link your producer sent you — or click here if you were told to join manually.</p>
+		</div>
+		<div class="card choice" onclick="location.href='admin.html'">
+			<div class="icon">🎛️</div>
+			<h2>Producer / Admin</h2>
+			<p>Log in to the control room: manage guests, run the green room, and send feeds to the broadcast.</p>
+		</div>
+	</div>
+
+	<footer>Powered by a self-hosted <a href="https://vdo.ninja" target="_blank" rel="noopener">VDO.Ninja</a> &middot; peer-to-peer, nothing routed through third-party servers</footer>
+</div>
+</body>
+</html>

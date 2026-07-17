@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Join the Show</title>
+<link rel="stylesheet" href="studio.css" />
+<style>
+	body { min-height: 100vh; display: flex; flex-direction: column; }
+
+	/* ----- lobby ----- */
+	#lobby, #leftScreen {
+		flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px;
+	}
+	.lobbyCard { max-width: 420px; width: 100%; padding: 34px; }
+	.lobbyCard .brandmark { margin-bottom: 4px; }
+	.lobbyCard .eventName { font-size: 1.35rem; font-weight: 700; margin: 14px 0 4px 0; }
+	.lobbyCard .note { color: var(--text-dim); font-size: 0.85rem; line-height: 1.55; margin: 14px 0 22px 0; }
+
+	/* ----- call screen ----- */
+	#call { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+	#topbar {
+		display: flex; align-items: center; gap: 14px;
+		padding: 10px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--border);
+		flex: none;
+	}
+	#topbar .brandmark { font-size: 0.95rem; }
+	#topbar .spacer { flex: 1; }
+	#statusMsg { color: var(--text-dim); font-size: 0.85rem; }
+	#stage { flex: 1; position: relative; min-height: 0; background: #000; }
+	#stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+	#waitOverlay {
+		position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px;
+		align-items: center; justify-content: center; text-align: center;
+		background: rgba(8, 10, 16, 0.55); backdrop-filter: blur(2px);
+		pointer-events: none; padding: 24px; transition: opacity 0.4s;
+	}
+	#waitOverlay h2 { font-size: 1.5rem; }
+	#waitOverlay p { color: var(--text-dim); max-width: 420px; line-height: 1.6; }
+	#waitOverlay .sunrise {
+		width: 54px; height: 54px; border-radius: 50%;
+		background: var(--accent-grad); box-shadow: 0 0 40px rgba(245, 160, 90, 0.6);
+		animation: breathe 2.8s ease-in-out infinite;
+	}
+	@keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+	/* ----- control bar ----- */
+	#controls {
+		flex: none; display: flex; align-items: center; justify-content: center; gap: 26px;
+		padding: 12px 18px 14px 18px; background: var(--bg-soft); border-top: 1px solid var(--border);
+	}
+	.ctl { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; color: var(--text); padding: 0; }
+	.ctl .bubble {
+		width: 52px; height: 52px; border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		background: var(--panel-2); border: 1px solid var(--border);
+		font-size: 1.35rem; transition: background 0.15s, border-color 0.15s;
+	}
+	.ctl:hover .bubble { background: #232b3d; }
+	.ctl span.lbl { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; letter-spacing: 0.03em; }
+	.ctl.off .bubble { background: #3a1518; border-color: #5c2226; }
+	.ctl.off span.lbl { color: #ff9b9b; }
+	.ctl.on .bubble { background: #3a2a12; border-color: var(--accent); box-shadow: 0 0 12px rgba(245, 160, 90, 0.35); }
+	.ctl.on span.lbl { color: var(--accent); }
+	.ctl.leave .bubble { background: var(--live); border-color: var(--live); }
+	.ctl.leave:hover .bubble { filter: brightness(1.15); }
+
+	/* ----- cue banner & timer ----- */
+	#cueBanner {
+		position: absolute; top: 14px; left: 50%; transform: translate(-50%, -80px);
+		background: linear-gradient(135deg, #2b2113, #33200f);
+		border: 1px solid rgba(245, 160, 90, 0.65); color: #ffd9ad;
+		padding: 13px 26px; border-radius: 12px; font-size: 1.05rem; font-weight: 700;
+		box-shadow: 0 10px 40px rgba(0,0,0,0.55); z-index: 60; max-width: min(80%, 640px);
+		text-align: center; opacity: 0; transition: transform 0.35s, opacity 0.35s; pointer-events: none;
+	}
+	#cueBanner.show { transform: translate(-50%, 0); opacity: 1; }
+	#cueBanner .from { display: block; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 3px; text-transform: uppercase; }
+	#cueTimer {
+		position: absolute; top: 14px; right: 16px; z-index: 60;
+		background: rgba(10, 13, 20, 0.85); border: 1px solid var(--border);
+		border-radius: 12px; padding: 8px 18px; text-align: center; display: none;
+		backdrop-filter: blur(3px);
+	}
+	#cueTimer.show { display: block; }
+	#cueTimer .t { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+	#cueTimer .lbl { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; }
+	#cueTimer.urgent { border-color: var(--live); }
+	#cueTimer.urgent .t { color: #ff7b7b; animation: pulse 1s infinite; }
+
+	/* live flash */
+	#liveFlash {
+		position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+		background: rgba(190, 30, 30, 0.25); z-index: 500; pointer-events: none;
+		opacity: 0; transition: opacity 0.5s; backdrop-filter: blur(1px);
+	}
+	#liveFlash div {
+		font-size: 3rem; font-weight: 800; letter-spacing: 0.1em;
+		color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.6);
+	}
+	@media (max-width: 560px) {
+		#controls { gap: 14px; }
+		.ctl .bubble { width: 46px; height: 46px; font-size: 1.15rem; }
+		#topbar .brandmark { display: none; }
+	}
+</style>
+</head>
+<body>
+
+<!-- ============ LOBBY ============ -->
+<div id="lobby">
+	<div class="card lobbyCard">
+		<div class="brandmark"><span class="sun"></span> <span id="brandName">At Dawn Studio</span></div>
+		<div class="eventName" id="eventName">Live Event</div>
+		<div class="muted small">You've been invited to join as a remote guest.</div>
+		<div class="note">
+			After you join you'll pick your camera &amp; microphone, then land in our
+			<b>waiting room</b>. A member of our team will check your audio &amp; video and
+			bring you into the show. Sit tight — we can see you're there!
+		</div>
+		<div class="field">
+			<label for="guestName">YOUR NAME (shown on screen)</label>
+			<input type="text" id="guestName" maxlength="40" placeholder="e.g. Jane Smith" autocomplete="name" />
+		</div>
+		<div class="field hidden" id="pwdField">
+			<label for="guestPwd">EVENT PASSWORD</label>
+			<input type="password" id="guestPwd" placeholder="Provided by your producer" />
+		</div>
+		<button class="btn primary block" id="joinBtn" style="margin-top:6px">Join the Show &nbsp;&rarr;</button>
+		<div id="lobbyErr" class="small" style="color:#ff9b9b; margin-top:12px;"></div>
+	</div>
+</div>
+
+<!-- ============ CALL ============ -->
+<div id="call" class="hidden">
+	<div id="topbar">
+		<div class="brandmark"><span class="sun"></span> <span id="brandName2">At Dawn Studio</span></div>
+		<div class="spacer"></div>
+		<span id="statusMsg"></span>
+		<span class="pill waiting" id="statusPill"><span class="dot"></span><span id="statusPillText">CONNECTING</span></span>
+	</div>
+	<div id="stage">
+		<iframe id="vdo" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe>
+		<div id="waitOverlay" class="hidden" style="opacity:0">
+			<div class="sunrise"></div>
+			<h2>You're in the waiting room</h2>
+			<p>Our team can see you and will bring you in shortly. Make sure your camera and
+			microphone look good — you can adjust them with the buttons below.</p>
+		</div>
+		<div id="cueBanner"><span class="from" id="cueFrom"></span><span id="cueText"></span></div>
+		<div id="cueTimer"><div class="t" id="cueTimerVal">0:00</div><div class="lbl">time left</div></div>
+	</div>
+	<div id="controls">
+		<button class="ctl" id="micBtn" title="Mute / unmute your microphone">
+			<span class="bubble">🎙️</span><span class="lbl">MIC</span>
+		</button>
+		<button class="ctl" id="camBtn" title="Turn your camera on / off">
+			<span class="bubble">🎥</span><span class="lbl">CAMERA</span>
+		</button>
+		<button class="ctl" id="blurBtn" title="Blur your background">
+			<span class="bubble">🌫️</span><span class="lbl">BLUR</span>
+		</button>
+		<button class="ctl" id="handBtn" title="Raise your hand — the team will see it">
+			<span class="bubble">✋</span><span class="lbl">HAND</span>
+		</button>
+		<button class="ctl" id="chatBtn" title="Open chat">
+			<span class="bubble">💬</span><span class="lbl">CHAT</span>
+		</button>
+		<button class="ctl" id="setBtn" title="Camera & microphone settings">
+			<span class="bubble">⚙️</span><span class="lbl">SETTINGS</span>
+		</button>
+		<button class="ctl leave" id="leaveBtn" title="Leave the show">
+			<span class="bubble">📞</span><span class="lbl">LEAVE</span>
+		</button>
+	</div>
+</div>
+
+<!-- ============ LEFT ============ -->
+<div id="leftScreen" class="hidden">
+	<div class="card lobbyCard" style="text-align:center">
+		<div class="brandmark" style="justify-content:center"><span class="sun"></span> <span id="brandName3">At Dawn Studio</span></div>
+		<h2 style="margin-top:18px">You've left the show</h2>
+		<p class="muted">Thanks for joining us! If you left by mistake you can rejoin below.</p>
+		<button class="btn primary" onclick="location.reload()" style="margin-top:10px">Rejoin</button>
+	</div>
+</div>
+
+<div id="liveFlash"><div>&#128308; YOU'RE LIVE</div></div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+"use strict";
+(() => {
+	const $ = id => document.getElementById(id);
+
+	/* ---------- resolve event payload ---------- */
+	const urlParams = new URLSearchParams(location.search);
+	let EV = Studio.b64uDecode(urlParams.get("e") || "") || null;
+	if (!EV) {
+		// fallback to deployment defaults (lets you test without a generated link)
+		const d = Studio.CFG.defaults || {};
+		EV = { n: d.eventName, b: Studio.CFG.brandName, g: d.greenRoom, m: d.mainRoom, p: d.roomPassword || "", ask: !!d.requirePasswordEntry };
+	}
+	EV.g = Studio.sanitizeId(EV.g);
+	EV.m = Studio.sanitizeId(EV.m);
+
+	document.title = (EV.n || "Live Event") + " — Join";
+	$("brandName").textContent = $("brandName2").textContent = $("brandName3").textContent = EV.b || Studio.CFG.brandName || "Studio";
+	$("eventName").textContent = EV.n || "Live Event";
+	if (EV.ask) $("pwdField").classList.remove("hidden");
+
+	const savedName = localStorage.getItem("studio_guest_name");
+	if (savedName) $("guestName").value = savedName;
+
+	/* ---------- state ---------- */
+	const iframe = $("vdo");
+	let state = "lobby";        // lobby -> connecting -> waiting -> green -> live -> left
+	let started = false;        // guest clicked START inside VDO (publishing)
+	let micOn = true, camOn = true, handUp = false, blurOn = false;
+	let pollTimer = null;
+
+	function setPill(cls, text, msg) {
+		const pill = $("statusPill");
+		pill.className = "pill " + cls;
+		$("statusPillText").textContent = text;
+		$("statusMsg").textContent = msg || "";
+	}
+
+	function chime(freq = 660, dur = 0.18, freq2 = 880) {
+		try {
+			const ctx = new (window.AudioContext || window.webkitAudioContext)();
+			[freq, freq2].forEach((f, i) => {
+				const o = ctx.createOscillator(), g = ctx.createGain();
+				o.frequency.value = f; o.type = "sine";
+				g.gain.setValueAtTime(0.0001, ctx.currentTime + i * dur);
+				g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + i * dur + 0.02);
+				g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (i + 1) * dur);
+				o.connect(g).connect(ctx.destination);
+				o.start(ctx.currentTime + i * dur); o.stop(ctx.currentTime + (i + 1) * dur);
+			});
+			setTimeout(() => ctx.close(), 1200);
+		} catch (e) {}
+	}
+
+	/* ---------- cue banner & countdown timer ---------- */
+	let cueTimerId = null, cueBannerId = null;
+	function showCue(text, from) {
+		const b = $("cueBanner");
+		$("cueText").textContent = text;
+		$("cueFrom").textContent = from || "Message from the team";
+		b.classList.add("show");
+		clearTimeout(cueBannerId);
+		cueBannerId = setTimeout(() => b.classList.remove("show"), 9000);
+		chime(520, 0.12, 660);
+	}
+	function fmtTime(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+	function startCueTimer(secs) {
+		clearInterval(cueTimerId);
+		const t = $("cueTimer");
+		if (!secs || secs <= 0) { t.classList.remove("show", "urgent"); return; }
+		let left = secs;
+		const render = () => {
+			$("cueTimerVal").textContent = fmtTime(Math.max(0, left));
+			t.classList.add("show");
+			t.classList.toggle("urgent", left <= 15);
+			if (left < 0) {
+				clearInterval(cueTimerId);
+				$("cueTimerVal").textContent = "TIME";
+				setTimeout(() => t.classList.remove("show", "urgent"), 4000);
+			}
+			left--;
+		};
+		render();
+		cueTimerId = setInterval(render, 1000);
+		chime(520, 0.12, 660);
+	}
+	function clearCues() {
+		clearInterval(cueTimerId);
+		$("cueTimer").classList.remove("show", "urgent");
+		$("cueBanner").classList.remove("show");
+	}
+
+	function applyState(next) {
+		if (next === state) return;
+		const prev = state;
+		state = next;
+		clearCues(); // segment changed — stale cues/timers no longer apply
+		const overlay = $("waitOverlay");
+		if (next === "waiting") {
+			setPill("waiting", "WAITING ROOM", "Our team will be right with you");
+			overlay.classList.remove("hidden");
+			requestAnimationFrame(() => (overlay.style.opacity = 1));
+		} else {
+			overlay.style.opacity = 0;
+			setTimeout(() => overlay.classList.add("hidden"), 450);
+		}
+		if (next === "green") {
+			setPill("green", "GREEN ROOM", "You're in! The show team can see & hear you");
+			if (prev === "waiting") chime();
+		} else if (next === "live") {
+			setPill("live", "ON AIR", "You are part of the broadcast");
+			chime(880, 0.16, 1100);
+			const flash = $("liveFlash");
+			flash.style.opacity = 1;
+			setTimeout(() => (flash.style.opacity = 0), 2200);
+		} else if (next === "left") {
+			$("call").classList.add("hidden");
+			$("leftScreen").classList.remove("hidden");
+			clearInterval(pollTimer);
+		}
+	}
+
+	/* ---------- join ---------- */
+	$("joinBtn").addEventListener("click", join);
+	$("guestName").addEventListener("keydown", e => { if (e.key === "Enter") join(); });
+	$("guestPwd").addEventListener("keydown", e => { if (e.key === "Enter") join(); });
+
+	function join() {
+		const name = $("guestName").value.trim();
+		if (!name) { $("lobbyErr").textContent = "Please enter your name first."; return; }
+		let pwd = EV.ask ? $("guestPwd").value.trim() : (EV.p || "");
+		if (EV.ask && !pwd) { $("lobbyErr").textContent = "Please enter the event password."; return; }
+		localStorage.setItem("studio_guest_name", name);
+
+		const sid = Studio.slugName(name) + "_" + Studio.randId(4);
+		const params = {
+			room: EV.g,
+			push: sid,
+			webcam: null,          // camera/mic guest flow with device pick + preview
+			holdwithvideo: null,   // waiting room: isolated until admitted, team can see them
+			label: name,
+			showlabels: null,
+			hideheader: null,
+			hidetranslate: null,
+			notify: null,          // sound when someone joins (heard by others)
+			tips: 0
+		};
+		if (pwd) params.password = pwd;
+		iframe.src = Studio.buildUrl(Studio.vdoBase(), params);
+
+		$("lobby").classList.add("hidden");
+		$("call").classList.remove("hidden");
+		setPill("waiting", "CONNECTING", "Choose your camera & mic, then press START");
+		state = "connecting";
+		pollTimer = setInterval(pollState, 1200);
+	}
+
+	/* ---------- hide VDO's own control bar; we provide our own ---------- */
+	const CHROME_HIDE_CSS = "#controlButtons, #header, #translateButton, #reportbutton { display: none !important; }";
+	iframe.addEventListener("load", () => {
+		if (!iframe.src) return;
+		setTimeout(() => Studio.send(iframe, { style: CHROME_HIDE_CSS }), 800);
+	});
+
+	/* ---------- state detection (same-origin) ----------
+	   The control room's director connections use stream IDs of the form
+	   "dir_<roomname>_<rand>", so the room we're in = the director we're connected to. */
+	function pollState() {
+		let s = null;
+		try { s = iframe.contentWindow && iframe.contentWindow.session; } catch (e) { return; } // cross-origin: rely on events only
+		if (!s) return;
+		try {
+			// VDO shows its own "please wait" popup in hold mode — our overlay covers that
+			const am = iframe.contentWindow.document.getElementById("alertModal");
+			if (am && /wait until the director/i.test(am.textContent || "")) am.style.display = "none";
+		} catch (e) {}
+		try {
+			if (state === "connecting" && !started) return; // still on device-pick screen
+			if (s.queue) { applyState("waiting"); return; }
+			let dirSid = "";
+			const du = s.directorUUID;
+			if (du && s.rpcs && s.rpcs[du]) dirSid = String(s.rpcs[du].streamID || "");
+			if (dirSid.indexOf("dir_" + EV.m + "_") === 0) applyState("live");
+			else if (dirSid.indexOf("dir_" + EV.g + "_") === 0) applyState("green");
+			else if (state === "waiting" || state === "connecting") applyState("green"); // admitted, director id unknown
+			// otherwise: director reconnecting — keep the current state
+		} catch (e) {}
+	}
+
+	/* ---------- iframe events ---------- */
+	window.addEventListener("message", e => {
+		if (e.source !== iframe.contentWindow || !e.data) return;
+		const d = e.data;
+		if (d.action === "started-camera" || d.action === "camera-share" || d.action === "joined-room-complete") {
+			if (!started) {
+				started = true;
+				Studio.send(iframe, { style: CHROME_HIDE_CSS }); // re-assert in case the load-time injection was too early
+				applyState("waiting"); // will immediately correct to green/live on next poll if not held
+				pollState();
+			}
+		}
+		if (d.action === "mic-mute-state") { micOn = !d.value; renderToggles(); }
+		if (d.action === "video-mute-state") { camOn = !d.value; renderToggles(); }
+		if (d.action === "hand" ) { handUp = !!d.value; renderToggles(); } // director lowered/raised our hand
+		if (d.action === "hungup" && started) applyState("left");
+
+		// chat from the control room → cue banner / timer (guests never need to open a chat window)
+		if (d.gotChat && d.gotChat.msg) {
+			const raw = String(d.gotChat.msg).replace(/<[^>]*>/g, "").trim();
+			const from = d.gotChat.label ? String(d.gotChat.label).replace(/<[^>]*>/g, "") : "";
+			const timerMatch = raw.match(/^⏱ TIMER (\d+)/);
+			if (timerMatch) startCueTimer(parseInt(timerMatch[1], 10));
+			else if (raw) showCue(raw.replace(/^📣\s*/, ""), from);
+		}
+	});
+
+	/* ---------- controls ---------- */
+	function renderToggles() {
+		$("micBtn").classList.toggle("off", !micOn);
+		$("micBtn").querySelector(".bubble").textContent = micOn ? "🎙️" : "🔇";
+		$("camBtn").classList.toggle("off", !camOn);
+		$("camBtn").querySelector(".bubble").textContent = camOn ? "🎥" : "🚫";
+		$("handBtn").classList.toggle("on", handUp);
+		$("blurBtn").classList.toggle("on", blurOn);
+	}
+	$("micBtn").addEventListener("click", () => Studio.send(iframe, { mic: "toggle" }));
+	$("camBtn").addEventListener("click", () => Studio.send(iframe, { camera: "toggle" }));
+	$("chatBtn").addEventListener("click", () => Studio.send(iframe, { function: "toggleChat" }));
+	$("setBtn").addEventListener("click", () => Studio.send(iframe, { toggleSettings: true }));
+	$("handBtn").addEventListener("click", () => {
+		Studio.send(iframe, { action: "togglehand" });
+		handUp = !handUp;
+		renderToggles();
+	});
+	$("blurBtn").addEventListener("click", () => {
+		// same-origin: drive VDO's effects engine directly (effect "3" = blurred background)
+		try {
+			const w = iframe.contentWindow;
+			if (!w.session || typeof w.updateRenderOutpipe !== "function") throw new Error("not ready");
+			blurOn = !blurOn;
+			w.session.effect = blurOn ? "3" : "0";
+			const sel = w.document.getElementById("effectSelector"); // keep the settings UI in sync if rendered
+			if (sel) sel.value = w.session.effect;
+			w.updateRenderOutpipe();
+			renderToggles();
+		} catch (e) {
+			Studio.toast("Blur isn't available on this device — try Settings → Effects", true);
+		}
+	});
+	$("leaveBtn").addEventListener("click", () => {
+		if (!confirm("Leave the show?")) return;
+		Studio.send(iframe, { close: true });
+		setTimeout(() => applyState("left"), 400);
+	});
+})();
+</script>
+</body>
+</html>
