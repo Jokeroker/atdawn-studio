@@ -4,6 +4,18 @@ A button-driven control room and a Zoom-simple guest experience, layered on top 
 self-hosted [VDO.Ninja](https://vdo.ninja). **No VDO.Ninja source files are modified** —
 everything lives in this `/studio/` folder, so you can update VDO.Ninja itself at any time.
 
+## License & credits
+
+This project builds on **[VDO.Ninja](https://github.com/steveseguin/vdo.ninja)** by
+**Steve Seguin**, licensed under the **AGPL-3.0** (see `LICENCE.md` and `AGPLv3.md` in
+the repository root). All the real-time video magic is his work — this folder only adds
+a workflow wrapper around it.
+
+The `/studio/` wrapper is likewise released under **AGPL-3.0**. The AGPL requires that
+modifications to the code stay publicly accessible — hosting this repository publicly
+(e.g. on GitHub) satisfies that requirement. If you fork this, please keep this notice,
+keep the repo public, and consider [supporting Steve's work](https://github.com/sponsors/steveseguin).
+
 ---
 
 ## The three pages

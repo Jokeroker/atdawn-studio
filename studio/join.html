@@ -206,6 +206,16 @@
 	EV.g = Studio.sanitizeId(EV.g);
 	EV.m = Studio.sanitizeId(EV.m);
 
+	// no usable invite (rooms unknown) — explain instead of failing silently
+	if (!EV.g || !EV.m) {
+		document.querySelector(".lobbyCard").innerHTML =
+			'<div class="brandmark"><span class="sun"></span> ' + (Studio.CFG.brandName || "Studio") + "</div>" +
+			'<h2 style="margin-top:18px">This link isn’t a valid invite</h2>' +
+			'<p class="muted">To join a show you need the personal invite link from your producer — ' +
+			"it contains the event details. Ask them to copy it from the control room and send it to you.</p>";
+		throw new Error("no event payload");
+	}
+
 	document.title = (EV.n || "Live Event") + " — Join";
 	$("brandName").textContent = $("brandName2").textContent = $("brandName3").textContent = EV.b || Studio.CFG.brandName || "Studio";
 	$("eventName").textContent = EV.n || "Live Event";

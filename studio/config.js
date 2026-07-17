@@ -19,15 +19,18 @@ window.STUDIO_CONFIG = {
 	tagline: "Remote Guest Green Room & Broadcast Control",
 	vdoPath: "../",
 
-	// SHA-256 of the admin password (default password: "atdawn2026")
-	adminPasswordHash: "7f61db09ee474ee3a306255503055a4e7f995466490eba8181562b6f080dde54",
+	// SHA-256 of the admin password (set via admin.html -> Settings -> "Change admin password")
+	adminPasswordHash: "2756913f66f6be6dc8152d971f1c9e7e7a99b9f77407c7f584b13c151993996d",
 
-	// Defaults used the first time the dashboard runs (editable in Settings)
+	// Defaults used the first time the dashboard runs (editable in Settings).
+	// Leave the room fields empty: the dashboard then generates unguessable random
+	// room names and a random password on first run — important because this file
+	// is public if you host the repo publicly (which the AGPL license encourages).
 	defaults: {
 		eventName: "At Dawn Live",
-		greenRoom: "atdawnGREEN",
-		mainRoom: "atdawnMAIN",
-		roomPassword: "dawnpass", // shared by both rooms (required for transfers to work)
+		greenRoom: "",   // "" = auto-generate a random, unguessable room id
+		mainRoom: "",    // "" = auto-generate
+		roomPassword: "", // "" = auto-generate; shared by both rooms (needed for transfers)
 		requirePasswordEntry: false // if true, guests must type the room password to join
 	}
 };
