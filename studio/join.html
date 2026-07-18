@@ -4,105 +4,139 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Join the Show</title>
+<link rel="stylesheet" href="../lineawesome/css/line-awesome.min.css" />
 <link rel="stylesheet" href="studio.css" />
 <style>
 	body { min-height: 100vh; display: flex; flex-direction: column; }
 
 	/* ----- lobby ----- */
-	#lobby, #leftScreen {
-		flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px;
-	}
-	.lobbyCard { max-width: 420px; width: 100%; padding: 34px; }
-	.lobbyCard .brandmark { margin-bottom: 4px; }
-	.lobbyCard .eventName { font-size: 1.35rem; font-weight: 700; margin: 14px 0 4px 0; }
-	.lobbyCard .note { color: var(--text-dim); font-size: 0.85rem; line-height: 1.55; margin: 14px 0 22px 0; }
+	#lobby, #leftScreen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+	.lobbyCard { max-width: 440px; width: 100%; padding: 36px; animation: cardIn 0.7s var(--ease) both; }
+	@keyframes cardIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+	.lobbyCard .brandmark { font-size: 0.9rem; color: var(--text-dim); }
+	.lobbyCard .eventName { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 16px 0 3px 0; }
+	.steps { display: flex; gap: 0; margin: 20px 0 24px 0; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+	.step { flex: 1; padding: 12px 8px; text-align: center; background: rgba(255, 255, 255, 0.02); }
+	.step + .step { border-left: 1px solid var(--line); }
+	.step i { display: block; font-size: 1.25rem; color: var(--accent); margin-bottom: 5px; }
+	.step span { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
 
 	/* ----- call screen ----- */
 	#call { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 	#topbar {
 		display: flex; align-items: center; gap: 14px;
-		padding: 10px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--border);
-		flex: none;
+		height: 54px; padding: 0 20px;
+		background: rgba(10, 13, 20, 0.75);
+		backdrop-filter: blur(14px);
+		border-bottom: 1px solid var(--line);
+		flex: none; z-index: 40;
 	}
-	#topbar .brandmark { font-size: 0.95rem; }
+	#topbar .brandmark { font-size: 0.9rem; }
 	#topbar .spacer { flex: 1; }
-	#statusMsg { color: var(--text-dim); font-size: 0.85rem; }
+	#statusMsg { color: var(--text-dim); font-size: 0.84rem; }
 	#stage { flex: 1; position: relative; min-height: 0; background: #000; }
 	#stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 	#waitOverlay {
-		position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px;
+		position: absolute; inset: 0; display: flex; flex-direction: column; gap: 16px;
 		align-items: center; justify-content: center; text-align: center;
-		background: rgba(8, 10, 16, 0.55); backdrop-filter: blur(2px);
-		pointer-events: none; padding: 24px; transition: opacity 0.4s;
+		background: radial-gradient(600px 300px at 50% 30%, rgba(246, 167, 92, 0.07), transparent 70%), rgba(7, 9, 14, 0.6);
+		backdrop-filter: blur(3px);
+		pointer-events: none; padding: 24px; transition: opacity 0.4s; z-index: 20;
 	}
-	#waitOverlay h2 { font-size: 1.5rem; }
-	#waitOverlay p { color: var(--text-dim); max-width: 420px; line-height: 1.6; }
+	#waitOverlay h2 { font-size: 1.55rem; letter-spacing: -0.02em; }
+	#waitOverlay p { color: var(--text-dim); max-width: 430px; line-height: 1.65; font-size: 0.92rem; }
 	#waitOverlay .sunrise {
-		width: 54px; height: 54px; border-radius: 50%;
-		background: var(--accent-grad); box-shadow: 0 0 40px rgba(245, 160, 90, 0.6);
+		width: 58px; height: 58px; border-radius: 50%;
+		background: var(--accent-grad);
+		box-shadow: 0 0 50px rgba(246, 167, 92, 0.55), 0 0 120px rgba(239, 100, 97, 0.25);
 		animation: breathe 2.8s ease-in-out infinite;
 	}
-	@keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
-
-	/* ----- control bar ----- */
-	#controls {
-		flex: none; display: flex; align-items: center; justify-content: center; gap: 26px;
-		padding: 12px 18px 14px 18px; background: var(--bg-soft); border-top: 1px solid var(--border);
-	}
-	.ctl { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; color: var(--text); padding: 0; }
-	.ctl .bubble {
-		width: 52px; height: 52px; border-radius: 50%;
-		display: flex; align-items: center; justify-content: center;
-		background: var(--panel-2); border: 1px solid var(--border);
-		font-size: 1.35rem; transition: background 0.15s, border-color 0.15s;
-	}
-	.ctl:hover .bubble { background: #232b3d; }
-	.ctl span.lbl { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; letter-spacing: 0.03em; }
-	.ctl.off .bubble { background: #3a1518; border-color: #5c2226; }
-	.ctl.off span.lbl { color: #ff9b9b; }
-	.ctl.on .bubble { background: #3a2a12; border-color: var(--accent); box-shadow: 0 0 12px rgba(245, 160, 90, 0.35); }
-	.ctl.on span.lbl { color: var(--accent); }
-	.ctl.leave .bubble { background: var(--live); border-color: var(--live); }
-	.ctl.leave:hover .bubble { filter: brightness(1.15); }
+	@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
 	/* ----- cue banner & timer ----- */
 	#cueBanner {
-		position: absolute; top: 14px; left: 50%; transform: translate(-50%, -80px);
-		background: linear-gradient(135deg, #2b2113, #33200f);
-		border: 1px solid rgba(245, 160, 90, 0.65); color: #ffd9ad;
-		padding: 13px 26px; border-radius: 12px; font-size: 1.05rem; font-weight: 700;
-		box-shadow: 0 10px 40px rgba(0,0,0,0.55); z-index: 60; max-width: min(80%, 640px);
-		text-align: center; opacity: 0; transition: transform 0.35s, opacity 0.35s; pointer-events: none;
+		position: absolute; top: 18px; left: 50%; transform: translate(-50%, -90px);
+		background: rgba(30, 24, 14, 0.88);
+		border: 1px solid rgba(246, 167, 92, 0.5);
+		color: #ffd9ad;
+		padding: 14px 28px; border-radius: var(--r-md);
+		font-size: 1.02rem; font-weight: 650;
+		box-shadow: var(--shadow-2), var(--glow-accent);
+		backdrop-filter: blur(12px);
+		z-index: 60; max-width: min(82%, 640px); text-align: center;
+		opacity: 0; transition: transform 0.4s var(--ease), opacity 0.4s var(--ease);
+		pointer-events: none;
 	}
 	#cueBanner.show { transform: translate(-50%, 0); opacity: 1; }
-	#cueBanner .from { display: block; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 3px; text-transform: uppercase; }
+	#cueBanner .from { display: block; font-size: 0.64rem; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; font-weight: 800; }
 	#cueTimer {
-		position: absolute; top: 14px; right: 16px; z-index: 60;
-		background: rgba(10, 13, 20, 0.85); border: 1px solid var(--border);
-		border-radius: 12px; padding: 8px 18px; text-align: center; display: none;
-		backdrop-filter: blur(3px);
+		position: absolute; top: 18px; right: 18px; z-index: 60;
+		background: rgba(10, 13, 20, 0.82);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--r-md); padding: 10px 20px; text-align: center;
+		display: none; backdrop-filter: blur(10px);
+		box-shadow: var(--shadow-1);
 	}
 	#cueTimer.show { display: block; }
-	#cueTimer .t { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
-	#cueTimer .lbl { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; }
-	#cueTimer.urgent { border-color: var(--live); }
-	#cueTimer.urgent .t { color: #ff7b7b; animation: pulse 1s infinite; }
+	#cueTimer .t { font-size: 1.75rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+	#cueTimer .lbl { font-size: 0.6rem; letter-spacing: 0.14em; color: var(--text-faint); text-transform: uppercase; font-weight: 700; }
+	#cueTimer.urgent { border-color: rgba(255, 87, 87, 0.6); }
+	#cueTimer.urgent .t { color: #ff8383; animation: pulse 1s infinite; }
+
+	/* ----- floating control dock ----- */
+	#controls {
+		position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+		display: flex; align-items: center; gap: 8px;
+		padding: 10px 14px;
+		background: rgba(13, 17, 25, 0.82);
+		border: 1px solid var(--line-strong);
+		border-radius: 22px;
+		backdrop-filter: blur(16px);
+		box-shadow: var(--shadow-2);
+		z-index: 50;
+	}
+	.ctl {
+		display: flex; flex-direction: column; align-items: center; gap: 4px;
+		background: none; border: none; cursor: pointer; color: var(--text);
+		padding: 0; width: 62px; font-family: inherit;
+	}
+	.ctl .bubble {
+		width: 46px; height: 46px; border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		background: rgba(255, 255, 255, 0.07);
+		border: 1px solid var(--line);
+		transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.12s var(--ease);
+	}
+	.ctl .bubble i { font-size: 1.3rem; }
+	.ctl:hover .bubble { background: rgba(255, 255, 255, 0.13); border-color: var(--line-strong); }
+	.ctl:active .bubble { transform: scale(0.94); }
+	.ctl span.lbl { font-size: 0.62rem; color: var(--text-dim); font-weight: 700; letter-spacing: 0.08em; }
+	.ctl.off .bubble { background: var(--live-soft); border-color: rgba(255, 87, 87, 0.45); color: #ff8f8f; }
+	.ctl.off span.lbl { color: #ff8f8f; }
+	.ctl.on .bubble { background: var(--accent-soft); border-color: rgba(246, 167, 92, 0.55); color: var(--accent); box-shadow: var(--glow-accent); }
+	.ctl.on span.lbl { color: var(--accent); }
+	.dockdiv { width: 1px; height: 40px; background: var(--line); margin: 0 4px; }
+	.ctl.leave .bubble { background: var(--live); border-color: var(--live); color: #fff; }
+	.ctl.leave:hover .bubble { filter: brightness(1.15); box-shadow: 0 0 18px rgba(255, 87, 87, 0.45); }
 
 	/* live flash */
 	#liveFlash {
 		position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-		background: rgba(190, 30, 30, 0.25); z-index: 500; pointer-events: none;
+		background: rgba(190, 30, 30, 0.22); z-index: 500; pointer-events: none;
 		opacity: 0; transition: opacity 0.5s; backdrop-filter: blur(1px);
 	}
 	#liveFlash div {
-		font-size: 3rem; font-weight: 800; letter-spacing: 0.1em;
-		color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.6);
+		font-size: 3rem; font-weight: 800; letter-spacing: 0.08em;
+		color: #fff; text-shadow: 0 4px 40px rgba(0, 0, 0, 0.65);
 	}
-	@media (max-width: 560px) {
-		#controls { gap: 14px; }
-		.ctl .bubble { width: 46px; height: 46px; font-size: 1.15rem; }
+	@media (max-width: 620px) {
+		#controls { gap: 2px; padding: 8px 10px; bottom: 12px; }
+		.ctl { width: 52px; }
+		.ctl .bubble { width: 42px; height: 42px; }
+		.ctl .bubble i { font-size: 1.15rem; }
 		#topbar .brandmark { display: none; }
+		#cueTimer { top: 12px; right: 12px; }
 	}
 </style>
 </head>
@@ -114,21 +148,21 @@
 		<div class="brandmark"><span class="sun"></span> <span id="brandName">At Dawn Studio</span></div>
 		<div class="eventName" id="eventName">Live Event</div>
 		<div class="muted small">You've been invited to join as a remote guest.</div>
-		<div class="note">
-			After you join you'll pick your camera &amp; microphone, then land in our
-			<b>waiting room</b>. A member of our team will check your audio &amp; video and
-			bring you into the show. Sit tight — we can see you're there!
+		<div class="steps">
+			<div class="step"><i class="las la-user"></i><span>Your name</span></div>
+			<div class="step"><i class="las la-video"></i><span>Camera check</span></div>
+			<div class="step"><i class="las la-couch"></i><span>Waiting room</span></div>
 		</div>
 		<div class="field">
-			<label for="guestName">YOUR NAME (shown on screen)</label>
+			<label for="guestName">Your name (shown on screen)</label>
 			<input type="text" id="guestName" maxlength="40" placeholder="e.g. Jane Smith" autocomplete="name" />
 		</div>
 		<div class="field hidden" id="pwdField">
-			<label for="guestPwd">EVENT PASSWORD</label>
+			<label for="guestPwd">Event password</label>
 			<input type="password" id="guestPwd" placeholder="Provided by your producer" />
 		</div>
-		<button class="btn primary block" id="joinBtn" style="margin-top:6px">Join the Show &nbsp;&rarr;</button>
-		<div id="lobbyErr" class="small" style="color:#ff9b9b; margin-top:12px;"></div>
+		<button class="btn primary block" id="joinBtn" style="margin-top:6px">Join the Show &nbsp;<i class="las la-arrow-right"></i></button>
+		<div id="lobbyErr" class="small" style="color:#ff9d9d; margin-top:12px;"></div>
 	</div>
 </div>
 
@@ -150,29 +184,31 @@
 		</div>
 		<div id="cueBanner"><span class="from" id="cueFrom"></span><span id="cueText"></span></div>
 		<div id="cueTimer"><div class="t" id="cueTimerVal">0:00</div><div class="lbl">time left</div></div>
-	</div>
-	<div id="controls">
-		<button class="ctl" id="micBtn" title="Mute / unmute your microphone">
-			<span class="bubble">🎙️</span><span class="lbl">MIC</span>
-		</button>
-		<button class="ctl" id="camBtn" title="Turn your camera on / off">
-			<span class="bubble">🎥</span><span class="lbl">CAMERA</span>
-		</button>
-		<button class="ctl" id="blurBtn" title="Blur your background">
-			<span class="bubble">🌫️</span><span class="lbl">BLUR</span>
-		</button>
-		<button class="ctl" id="handBtn" title="Raise your hand — the team will see it">
-			<span class="bubble">✋</span><span class="lbl">HAND</span>
-		</button>
-		<button class="ctl" id="chatBtn" title="Open chat">
-			<span class="bubble">💬</span><span class="lbl">CHAT</span>
-		</button>
-		<button class="ctl" id="setBtn" title="Camera & microphone settings">
-			<span class="bubble">⚙️</span><span class="lbl">SETTINGS</span>
-		</button>
-		<button class="ctl leave" id="leaveBtn" title="Leave the show">
-			<span class="bubble">📞</span><span class="lbl">LEAVE</span>
-		</button>
+
+		<div id="controls">
+			<button class="ctl" id="micBtn" title="Mute / unmute your microphone">
+				<span class="bubble"><i class="las la-microphone"></i></span><span class="lbl">MIC</span>
+			</button>
+			<button class="ctl" id="camBtn" title="Turn your camera on / off">
+				<span class="bubble"><i class="las la-video"></i></span><span class="lbl">CAMERA</span>
+			</button>
+			<button class="ctl" id="blurBtn" title="Blur your background">
+				<span class="bubble"><i class="las la-magic"></i></span><span class="lbl">BLUR</span>
+			</button>
+			<button class="ctl" id="handBtn" title="Raise your hand — the team will see it">
+				<span class="bubble"><i class="las la-hand-paper"></i></span><span class="lbl">HAND</span>
+			</button>
+			<button class="ctl" id="chatBtn" title="Open chat">
+				<span class="bubble"><i class="las la-comment"></i></span><span class="lbl">CHAT</span>
+			</button>
+			<button class="ctl" id="setBtn" title="Camera & microphone settings">
+				<span class="bubble"><i class="las la-cog"></i></span><span class="lbl">SETTINGS</span>
+			</button>
+			<div class="dockdiv"></div>
+			<button class="ctl leave" id="leaveBtn" title="Leave the show">
+				<span class="bubble"><i class="las la-phone" style="transform:rotate(135deg)"></i></span><span class="lbl">LEAVE</span>
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -180,9 +216,9 @@
 <div id="leftScreen" class="hidden">
 	<div class="card lobbyCard" style="text-align:center">
 		<div class="brandmark" style="justify-content:center"><span class="sun"></span> <span id="brandName3">At Dawn Studio</span></div>
-		<h2 style="margin-top:18px">You've left the show</h2>
+		<h2 style="margin-top:20px">You've left the show</h2>
 		<p class="muted">Thanks for joining us! If you left by mistake you can rejoin below.</p>
-		<button class="btn primary" onclick="location.reload()" style="margin-top:10px">Rejoin</button>
+		<button class="btn primary" onclick="location.reload()" style="margin-top:12px"><i class="las la-redo-alt"></i> Rejoin</button>
 	</div>
 </div>
 
@@ -210,8 +246,8 @@
 	if (!EV.g || !EV.m) {
 		document.querySelector(".lobbyCard").innerHTML =
 			'<div class="brandmark"><span class="sun"></span> ' + (Studio.CFG.brandName || "Studio") + "</div>" +
-			'<h2 style="margin-top:18px">This link isn’t a valid invite</h2>' +
-			'<p class="muted">To join a show you need the personal invite link from your producer — ' +
+			'<h2 style="margin-top:20px">This link isn’t a valid invite</h2>' +
+			'<p class="muted" style="line-height:1.6">To join a show you need the personal invite link from your producer — ' +
 			"it contains the event details. Ask them to copy it from the control room and send it to you.</p>";
 		throw new Error("no event payload");
 	}
@@ -403,7 +439,7 @@
 		}
 		if (d.action === "mic-mute-state") { micOn = !d.value; renderToggles(); }
 		if (d.action === "video-mute-state") { camOn = !d.value; renderToggles(); }
-		if (d.action === "hand" ) { handUp = !!d.value; renderToggles(); } // director lowered/raised our hand
+		if (d.action === "hand") { handUp = !!d.value; renderToggles(); } // director lowered/raised our hand
 		if (d.action === "hungup" && started) applyState("left");
 
 		// chat from the control room → cue banner / timer (guests never need to open a chat window)
@@ -417,11 +453,14 @@
 	});
 
 	/* ---------- controls ---------- */
+	function setIcon(btnId, cls) {
+		$(btnId).querySelector(".bubble i").className = "las " + cls;
+	}
 	function renderToggles() {
 		$("micBtn").classList.toggle("off", !micOn);
-		$("micBtn").querySelector(".bubble").textContent = micOn ? "🎙️" : "🔇";
+		setIcon("micBtn", micOn ? "la-microphone" : "la-microphone-slash");
 		$("camBtn").classList.toggle("off", !camOn);
-		$("camBtn").querySelector(".bubble").textContent = camOn ? "🎥" : "🚫";
+		setIcon("camBtn", camOn ? "la-video" : "la-video-slash");
 		$("handBtn").classList.toggle("on", handUp);
 		$("blurBtn").classList.toggle("on", blurOn);
 	}

@@ -4,95 +4,150 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Control Room — At Dawn Studio</title>
+<link rel="stylesheet" href="../lineawesome/css/line-awesome.min.css" />
 <link rel="stylesheet" href="studio.css" />
 <style>
 	body { height: 100vh; overflow: hidden; }
 
 	/* ----- login ----- */
-	#loginScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 100; padding: 20px; }
-	.loginCard { max-width: 380px; width: 100%; padding: 34px; }
+	#loginScreen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: inherit; z-index: 100; padding: 24px; }
+	.loginCard { max-width: 390px; width: 100%; padding: 38px; animation: cardIn 0.7s var(--ease) both; }
+	@keyframes cardIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 	/* ----- app shell ----- */
 	#app { display: flex; height: 100vh; }
 	#sidebar {
-		width: 232px; flex: none; background: var(--bg-soft); border-right: 1px solid var(--border);
-		display: flex; flex-direction: column; padding: 18px 12px;
+		width: 244px; flex: none;
+		background: rgba(10, 13, 20, 0.65);
+		backdrop-filter: blur(14px);
+		border-right: 1px solid var(--line);
+		display: flex; flex-direction: column; padding: 22px 14px;
 	}
-	#sidebar .brandmark { padding: 0 10px 4px 10px; font-size: 1rem; }
-	#sidebar .evName { padding: 0 10px 16px 10px; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+	#sidebar .brandmark { padding: 0 10px 6px 10px; font-size: 1rem; }
+	#sidebar .evName { padding: 0 10px 18px 10px; color: var(--text-faint); font-size: 0.76rem; border-bottom: 1px solid var(--line); margin-bottom: 16px; line-height: 1.5; word-break: break-all; }
 	.navItem {
-		display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 9px;
-		color: var(--text-dim); font-weight: 600; font-size: 0.92rem; cursor: pointer; border: none;
-		background: none; text-align: left; width: 100%; margin-bottom: 3px;
+		display: flex; align-items: center; gap: 12px;
+		height: 42px; padding: 0 13px; border-radius: 11px;
+		color: var(--text-dim); font-weight: 600; font-size: 0.9rem;
+		cursor: pointer; border: 1px solid transparent; background: none;
+		text-align: left; width: 100%; margin-bottom: 4px; font-family: inherit;
+		position: relative;
+		transition: background 0.15s var(--ease), color 0.15s var(--ease);
 	}
-	.navItem:hover { background: var(--panel); color: var(--text); }
-	.navItem.active { background: var(--panel-2); color: var(--text); }
+	.navItem i.las { font-size: 1.2rem; width: 20px; text-align: center; }
+	.navItem:hover { background: rgba(255, 255, 255, 0.05); color: var(--text); }
+	.navItem.active { background: rgba(255, 255, 255, 0.07); border-color: var(--line); color: var(--text); }
+	.navItem.active::before {
+		content: ""; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px;
+		border-radius: 0 3px 3px 0; background: var(--accent-grad);
+	}
+	.navItem.active i.las { color: var(--accent); }
 	.navItem .badge {
-		margin-left: auto; background: var(--warn); color: #201500; border-radius: 999px;
-		font-size: 0.72rem; font-weight: 800; padding: 2px 8px; display: none;
+		margin-left: auto; background: var(--warn); color: #241a02; border-radius: 999px;
+		font-size: 0.68rem; font-weight: 800; padding: 2px 8px; display: none;
 	}
 	.navItem .badge.show { display: inline-block; animation: pulse 1.5s infinite; }
-	#sidebar .foot { margin-top: auto; padding: 10px; }
+	#sidebar .foot { margin-top: auto; padding: 10px 4px 0 4px; }
 
 	/* ----- views ----- */
 	#main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 	.view { flex: 1; min-height: 0; display: none; }
 	.view.active { display: flex; flex-direction: column; }
-	.view.pad { padding: 26px; overflow-y: auto; display: none; }
+	.view.pad { padding: 30px 34px; overflow-y: auto; display: none; }
 	.view.pad.active { display: block; }
+	.viewTitle { font-size: 1.35rem; margin-bottom: 24px; letter-spacing: -0.02em; }
 
-	.viewHead { display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: var(--bg-soft); border-bottom: 1px solid var(--border); flex: none; }
-	.viewHead h2 { margin: 0; font-size: 1rem; }
+	.viewHead {
+		display: flex; align-items: center; gap: 12px;
+		height: 54px; padding: 0 20px;
+		background: rgba(10, 13, 20, 0.65); backdrop-filter: blur(10px);
+		border-bottom: 1px solid var(--line); flex: none;
+	}
+	.viewHead h2 { margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 9px; }
+	.viewHead h2 i.las { color: var(--accent); font-size: 1.15rem; }
 	.viewHead .spacer { flex: 1; }
 	.frameWrap { flex: 1; min-height: 0; position: relative; background: #000; }
 	.frameWrap iframe { position: absolute; inset: 0; }
 
 	/* ----- overview ----- */
-	.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px; max-width: 1200px; }
-	.linkRow { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+	.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; max-width: 1240px; }
+	.linkRow { display: flex; align-items: center; gap: 12px; padding: 11px 0; }
+	.linkRow + .linkRow { border-top: 1px solid var(--line); }
 	.linkRow .desc { flex: 1; min-width: 0; }
-	.linkRow .desc b { display: block; font-size: 0.92rem; }
-	.linkRow .desc span { color: var(--text-dim); font-size: 0.78rem; }
+	.linkRow .desc b { display: block; font-size: 0.9rem; font-weight: 650; }
+	.linkRow .desc span { color: var(--text-dim); font-size: 0.76rem; line-height: 1.5; }
 
-	/* ----- guest cards ----- */
-	#guestBoard { margin-top: 24px; max-width: 1200px; }
-	.roomCol h3 { font-size: 0.85rem; letter-spacing: 0.06em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
-	.roomCol h3 .cnt { background: var(--panel-2); border: 1px solid var(--border); padding: 1px 9px; border-radius: 999px; font-size: 0.75rem; }
-	.colTools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-	.btn.talk.active { background: var(--accent-grad); border: none; color: #1a1006; box-shadow: 0 0 14px rgba(245, 160, 90, 0.5); }
-	.guestCard {
-		display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--border);
-		border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; flex-wrap: wrap;
+	/* ----- guest board ----- */
+	#guestBoard { margin-top: 28px; max-width: 1240px; }
+	.roomCol h3 {
+		display: flex; gap: 9px; align-items: center;
+		font-size: 0.74rem; letter-spacing: 0.12em; color: var(--text-dim);
+		text-transform: uppercase; margin-bottom: 10px; font-weight: 700;
 	}
-	.guestCard.queued { border-color: rgba(245, 193, 90, 0.5); }
-	.guestCard.hand { border-color: var(--warn); box-shadow: 0 0 14px rgba(245, 193, 90, 0.25); }
-	.guestCard.whispering { border-color: var(--accent); box-shadow: 0 0 14px rgba(245, 160, 90, 0.35); }
-	.guestCard .who { min-width: 140px; flex: 1; }
-	.guestCard .who b { display: block; font-size: 0.95rem; }
-	.guestCard .who span { font-size: 0.75rem; color: var(--text-dim); }
-	.guestCard .who .note { display: block; font-size: 0.75rem; color: var(--warn); font-style: italic; }
-	.guestCard .acts { display: flex; gap: 6px; flex-wrap: wrap; }
-	.guestCard .acts .btn.sm.active { border-color: var(--accent); color: var(--accent); background: #2b2113; }
-	.hdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+	.roomCol h3 i.las { font-size: 1.05rem; color: var(--accent); }
+	.roomCol h3 .cnt {
+		background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+		padding: 1px 9px; border-radius: 999px; font-size: 0.72rem; color: var(--text);
+	}
+	.colTools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+	.btn.talk.active {
+		background: var(--accent-grad); border-color: transparent; color: #23120a;
+		box-shadow: var(--glow-accent);
+	}
+	.guestCard {
+		display: flex; align-items: center; gap: 14px;
+		background: var(--surface); border: 1px solid var(--line);
+		border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px; flex-wrap: wrap;
+		box-shadow: var(--shadow-1);
+		transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+	}
+	.guestCard.queued { border-color: rgba(245, 193, 90, 0.45); }
+	.guestCard.hand { border-color: var(--warn); box-shadow: 0 0 20px rgba(245, 193, 90, 0.2); }
+	.guestCard.whispering { border-color: rgba(246, 167, 92, 0.6); box-shadow: var(--glow-accent); }
+	.avatar {
+		width: 40px; height: 40px; border-radius: 12px; flex: none;
+		display: flex; align-items: center; justify-content: center;
+		background: var(--accent-soft); border: 1px solid rgba(246, 167, 92, 0.3);
+		color: var(--accent); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.02em;
+		position: relative;
+	}
+	.avatar .hdot { position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px; border: 2px solid #10141d; margin: 0; }
+	.guestCard .who { min-width: 130px; flex: 1; }
+	.guestCard .who b { display: block; font-size: 0.95rem; font-weight: 650; margin-bottom: 3px; }
+	.guestCard .who .meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+	.guestCard .who .sid { font-size: 0.7rem; color: var(--text-faint); }
+	.guestCard .who .note { display: block; font-size: 0.76rem; color: var(--warn); font-style: italic; margin-top: 4px; }
+	.guestCard .acts { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+	.guestCard .acts .btn.sm.active { border-color: rgba(246, 167, 92, 0.6); color: var(--accent); background: var(--accent-soft); }
+	.hdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
 	.hdot.g { background: var(--good); } .hdot.y { background: var(--warn); }
-	.hdot.r { background: var(--live); animation: pulse 1.2s infinite; } .hdot.u { background: #4a5468; }
-	.emptyNote { color: var(--text-dim); font-size: 0.85rem; padding: 14px; border: 1px dashed var(--border); border-radius: 10px; }
+	.hdot.r { background: var(--live); animation: pulse 1.2s infinite; } .hdot.u { background: #47526a; }
+	.emptyNote {
+		color: var(--text-faint); font-size: 0.85rem; padding: 22px 18px; text-align: center;
+		border: 1px dashed var(--line); border-radius: var(--r-md); line-height: 1.6;
+	}
+
+	.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+	@media (max-width: 940px) { .twoCol { grid-template-columns: 1fr; } }
+
+	code.snippet {
+		display: block; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line);
+		border-radius: var(--r-sm); padding: 13px; font-size: 0.75rem; overflow-x: auto; margin: 12px 0;
+		font-family: "Cascadia Code", Consolas, monospace;
+	}
 
 	/* ----- popover menu ----- */
 	#popMenu {
-		position: fixed; z-index: 300; background: var(--panel-2); border: 1px solid #35405a;
-		border-radius: 10px; box-shadow: var(--shadow); padding: 6px; min-width: 170px; display: none;
+		position: fixed; z-index: 300;
+		background: rgba(24, 30, 42, 0.96); border: 1px solid var(--line-strong);
+		border-radius: var(--r-md); box-shadow: var(--shadow-2); backdrop-filter: blur(14px);
+		padding: 6px; min-width: 190px; display: none;
 	}
 	#popMenu button {
 		display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text);
-		padding: 9px 12px; border-radius: 7px; font-size: 0.88rem; cursor: pointer; font-family: inherit;
+		padding: 10px 13px; border-radius: 9px; font-size: 0.87rem; cursor: pointer; font-family: inherit; font-weight: 500;
 	}
-	#popMenu button:hover { background: #2b3550; }
-
-	.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-	@media (max-width: 900px) { .twoCol { grid-template-columns: 1fr; } }
-
-	code.snippet { display: block; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 0.78rem; overflow-x: auto; margin: 10px 0; }
+	#popMenu button:hover { background: rgba(255, 255, 255, 0.08); }
 </style>
 </head>
 <body>
@@ -101,14 +156,14 @@
 <div id="loginScreen">
 	<div class="card loginCard">
 		<div class="brandmark"><span class="sun"></span> <span id="brandLogin">At Dawn Studio</span></div>
-		<h2 style="margin-top:18px">Control Room</h2>
-		<p class="muted small">Producer &amp; admin access only.</p>
-		<div class="field" style="margin-top:18px">
-			<label for="adminPwd">ADMIN PASSWORD</label>
+		<h2 style="margin-top:22px; font-size:1.4rem">Control Room</h2>
+		<p class="muted small" style="margin-top:2px">Producer &amp; admin access only.</p>
+		<div class="field" style="margin-top:22px">
+			<label for="adminPwd">Admin password</label>
 			<input type="password" id="adminPwd" autocomplete="current-password" />
 		</div>
-		<button class="btn primary block" id="loginBtn">Enter Control Room</button>
-		<div id="loginErr" class="small" style="color:#ff9b9b; margin-top:12px;"></div>
+		<button class="btn primary block" id="loginBtn">Enter Control Room &nbsp;<i class="las la-arrow-right"></i></button>
+		<div id="loginErr" class="small" style="color:#ff9d9d; margin-top:12px;"></div>
 	</div>
 </div>
 
@@ -117,47 +172,47 @@
 	<div id="sidebar">
 		<div class="brandmark"><span class="sun"></span> <span id="brandSide">At Dawn Studio</span></div>
 		<div class="evName" id="sideEventName"></div>
-		<button class="navItem active" data-view="overview">🏠 Overview &amp; Links</button>
-		<button class="navItem" data-view="green">🛋️ Green Room <span class="badge" id="greenBadge">0</span></button>
-		<button class="navItem" data-view="mainstage">📡 Main Broadcast</button>
-		<button class="navItem" data-view="settings">⚙️ Settings</button>
+		<button class="navItem active" data-view="overview"><i class="las la-home"></i> Overview &amp; Links</button>
+		<button class="navItem" data-view="green"><i class="las la-couch"></i> Green Room <span class="badge" id="greenBadge">0</span></button>
+		<button class="navItem" data-view="mainstage"><i class="las la-broadcast-tower"></i> Main Broadcast</button>
+		<button class="navItem" data-view="settings"><i class="las la-cog"></i> Settings</button>
 		<div class="foot">
-			<button class="btn sm block" id="logoutBtn">Log out</button>
+			<button class="btn sm block" id="logoutBtn"><i class="las la-sign-out-alt"></i> Log out</button>
 		</div>
 	</div>
 
 	<div id="main">
 		<!-- ---------- OVERVIEW ---------- -->
 		<div class="view pad active" id="view-overview">
-			<h2 style="margin-bottom:20px">Overview &amp; Links</h2>
+			<h2 class="viewTitle">Overview &amp; Links</h2>
 			<div class="grid">
 				<div class="card">
-					<h3>🔗 Invite people</h3>
+					<h3><i class="las la-link"></i> Invite people</h3>
 					<div class="linkRow">
 						<div class="desc"><b>Guest invite link</b><span>Send to guests — name prompt, waiting room, green room</span></div>
-						<button class="btn sm primary" data-copy="guest">Copy</button>
+						<button class="btn sm primary" data-copy="guest"><i class="las la-copy"></i> Copy</button>
 					</div>
 					<div class="linkRow">
 						<div class="desc"><b>Co-producer dashboard</b><span>This control room — they log in with the admin password</span></div>
-						<button class="btn sm" data-copy="admin">Copy</button>
+						<button class="btn sm" data-copy="admin"><i class="las la-copy"></i> Copy</button>
 					</div>
 					<hr class="sep" />
 					<label class="checkline"><input type="checkbox" id="askPwdChk" /> Guests must type the event password (don't embed it in the link)</label>
 				</div>
 
 				<div class="card">
-					<h3>🎬 OBS browser sources</h3>
+					<h3><i class="las la-photo-video"></i> OBS browser sources</h3>
 					<div class="linkRow">
 						<div class="desc"><b>Main broadcast — full mix</b><span>Auto-mixed scene of everyone in the main room</span></div>
-						<button class="btn sm primary" data-copy="sceneMain">Copy</button>
+						<button class="btn sm primary" data-copy="sceneMain"><i class="las la-copy"></i> Copy</button>
 					</div>
 					<div class="linkRow">
 						<div class="desc"><b>Green room — full mix</b><span>Monitor or program feed of the green room</span></div>
-						<button class="btn sm" data-copy="sceneGreen">Copy</button>
+						<button class="btn sm" data-copy="sceneGreen"><i class="las la-copy"></i> Copy</button>
 					</div>
-					<p class="small muted" style="margin-top:10px">Per-guest solo feeds: use the <b>Solo link</b> button on any guest below. In OBS set sources to 1920×1080 and check "Control audio via OBS".</p>
+					<p class="small muted" style="margin-top:12px; line-height:1.6">Per-guest solo feeds: use the <b>Solo link</b> button on any guest below. In OBS set sources to 1920×1080 and check "Control audio via OBS".</p>
 					<hr class="sep" />
-					<label class="checkline" style="margin-bottom:8px"><input type="checkbox" id="labelsChk" /> Show name labels on the OBS mixes</label>
+					<label class="checkline" style="margin-bottom:9px"><input type="checkbox" id="labelsChk" /> Show name labels on the OBS mixes</label>
 					<label class="checkline"><input type="checkbox" id="autoRecChk" /> Auto-record every guest while they're on air (saves to this computer)</label>
 				</div>
 			</div>
@@ -165,24 +220,24 @@
 			<div id="guestBoard">
 				<div class="twoCol">
 					<div class="roomCol">
-						<h3>🛋️ Green room <span class="cnt" id="cntGreen">0</span></h3>
+						<h3><i class="las la-couch"></i> Green room <span class="cnt" id="cntGreen">0</span></h3>
 						<div class="colTools">
-							<button class="btn sm talk" data-room="green" data-tool="talk" title="Your voice to everyone in the green room — never reaches the stream">🎙️ Talk</button>
-							<button class="btn sm" data-room="green" data-tool="cueAll" title="Send an on-screen message to everyone here">📣 Cue all</button>
-							<button class="btn sm" data-room="green" data-tool="timer" title="Show a countdown on everyone's screen">⏱ Timer</button>
-							<button class="btn sm" data-room="green" data-tool="muteAll" title="Cut every mic in this room">🔇 Mute all</button>
-							<button class="btn sm" data-room="green" data-tool="unmuteAll" title="Open every mic in this room">🔊 Unmute</button>
+							<button class="btn sm talk" data-room="green" data-tool="talk" title="Your voice to everyone in the green room — never reaches the stream"><i class="las la-microphone"></i> Talk</button>
+							<button class="btn sm" data-room="green" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
+							<button class="btn sm" data-room="green" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
+							<button class="btn sm" data-room="green" data-tool="muteAll" title="Cut every mic in this room"><i class="las la-volume-mute"></i> Mute all</button>
+							<button class="btn sm" data-room="green" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
 						</div>
 						<div id="listGreen"><div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div></div>
 					</div>
 					<div class="roomCol">
-						<h3>📡 Main broadcast <span class="cnt" id="cntMain">0</span></h3>
+						<h3><i class="las la-broadcast-tower"></i> Main broadcast <span class="cnt" id="cntMain">0</span></h3>
 						<div class="colTools">
-							<button class="btn sm talk" data-room="main" data-tool="talk" title="Your voice to everyone on air (guests only — the stream never hears you)">🎙️ Talk</button>
-							<button class="btn sm" data-room="main" data-tool="cueAll" title="Send an on-screen message to everyone here">📣 Cue all</button>
-							<button class="btn sm" data-room="main" data-tool="timer" title="Show a countdown on everyone's screen">⏱ Timer</button>
-							<button class="btn sm" data-room="main" data-tool="muteAll" title="Panic button: cut every mic on air">🔇 Mute all</button>
-							<button class="btn sm" data-room="main" data-tool="unmuteAll" title="Open every mic in this room">🔊 Unmute</button>
+							<button class="btn sm talk" data-room="main" data-tool="talk" title="Your voice to everyone on air (guests only — the stream never hears you)"><i class="las la-microphone"></i> Talk</button>
+							<button class="btn sm" data-room="main" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
+							<button class="btn sm" data-room="main" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
+							<button class="btn sm" data-room="main" data-tool="muteAll" title="Panic button: cut every mic on air"><i class="las la-volume-mute"></i> Mute all</button>
+							<button class="btn sm" data-room="main" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
 						</div>
 						<div id="listMain"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
 					</div>
@@ -194,10 +249,10 @@
 		<!-- ---------- GREEN ROOM DIRECTOR ---------- -->
 		<div class="view" id="view-green">
 			<div class="viewHead">
-				<h2>🛋️ Green Room — full director controls</h2>
+				<h2><i class="las la-couch"></i> Green Room — full director controls</h2>
 				<div class="spacer"></div>
 				<span class="muted small">Use ✚ Activate on a guest tile to admit them from the waiting room</span>
-				<button class="btn sm" id="popGreen">Pop out ↗</button>
+				<button class="btn sm" id="popGreen"><i class="las la-external-link-alt"></i> Pop out</button>
 			</div>
 			<div class="frameWrap"><iframe id="dirGreen" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
 		</div>
@@ -205,35 +260,35 @@
 		<!-- ---------- MAIN STAGE DIRECTOR ---------- -->
 		<div class="view" id="view-mainstage">
 			<div class="viewHead">
-				<h2>📡 Main Broadcast — full director controls</h2>
+				<h2><i class="las la-broadcast-tower"></i> Main Broadcast — full director controls</h2>
 				<div class="spacer"></div>
-				<button class="btn sm" id="popMain">Pop out ↗</button>
+				<button class="btn sm" id="popMain"><i class="las la-external-link-alt"></i> Pop out</button>
 			</div>
 			<div class="frameWrap"><iframe id="dirMain" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
 		</div>
 
 		<!-- ---------- SETTINGS ---------- -->
 		<div class="view pad" id="view-settings">
-			<h2 style="margin-bottom:20px">Settings</h2>
+			<h2 class="viewTitle">Settings</h2>
 			<div class="grid">
 				<div class="card">
-					<h3>Event setup</h3>
-					<p class="small muted">Room names may only contain letters, numbers and underscores. Both rooms share one password (required so guests can be moved between them).</p>
-					<div class="field"><label>EVENT NAME</label><input type="text" id="setName" /></div>
-					<div class="field"><label>GREEN ROOM ID</label><input type="text" id="setGreen" /></div>
-					<div class="field"><label>MAIN BROADCAST ROOM ID</label><input type="text" id="setMain" /></div>
-					<div class="field"><label>ROOM PASSWORD</label><input type="text" id="setPwd" /></div>
-					<button class="btn primary" id="saveSettings">Save &amp; reconnect rooms</button>
-					<button class="btn" id="newEventBtn" title="Generates fresh room names — old links stop working">↻ New event (fresh rooms)</button>
+					<h3><i class="las la-clipboard-list"></i> Event setup</h3>
+					<p class="small muted" style="line-height:1.6">Room names may only contain letters, numbers and underscores. Both rooms share one password (required so guests can be moved between them).</p>
+					<div class="field"><label>Event name</label><input type="text" id="setName" /></div>
+					<div class="field"><label>Green room ID</label><input type="text" id="setGreen" /></div>
+					<div class="field"><label>Main broadcast room ID</label><input type="text" id="setMain" /></div>
+					<div class="field"><label>Room password</label><input type="text" id="setPwd" /></div>
+					<button class="btn primary" id="saveSettings"><i class="las la-save"></i> Save &amp; reconnect rooms</button>
+					<button class="btn" id="newEventBtn" title="Generates fresh room names — old links stop working"><i class="las la-sync"></i> New event (fresh rooms)</button>
 				</div>
 				<div class="card">
-					<h3>Admin password</h3>
-					<p class="small muted">The dashboard password is stored as a hash in <span class="mono">studio/config.js</span>. Generate a new hash here, then paste it into that file on your server.</p>
-					<div class="field"><label>NEW ADMIN PASSWORD</label><input type="text" id="newAdminPwd" /></div>
-					<button class="btn" id="genHashBtn">Generate hash</button>
+					<h3><i class="las la-key"></i> Admin password</h3>
+					<p class="small muted" style="line-height:1.6">The dashboard password is stored as a hash in <span class="mono">studio/config.js</span>. Generate a new hash here, then paste it into that file on your server.</p>
+					<div class="field"><label>New admin password</label><input type="text" id="newAdminPwd" /></div>
+					<button class="btn" id="genHashBtn"><i class="las la-magic"></i> Generate hash</button>
 					<div id="hashOut" class="hidden">
 						<code class="snippet" id="hashSnippet"></code>
-						<button class="btn sm" id="copyHashBtn">Copy line</button>
+						<button class="btn sm" id="copyHashBtn"><i class="las la-copy"></i> Copy line</button>
 					</div>
 				</div>
 			</div>
@@ -444,7 +499,9 @@
 		document.querySelectorAll('[data-tool="talk"]').forEach(btn => {
 			const mode = talk[btn.dataset.room];
 			btn.classList.toggle("active", mode !== "off");
-			btn.textContent = mode === "off" ? "🎙️ Talk" : (mode === "room" ? "🔴 Talking — stop" : "🎧 Whispering — stop");
+			btn.innerHTML = mode === "off"
+				? '<i class="las la-microphone"></i> Talk'
+				: (mode === "room" ? '<i class="las la-microphone"></i> Talking — stop' : '<i class="las la-headset"></i> Whispering — stop');
 		});
 	}
 
@@ -580,31 +637,38 @@
 		return out;
 	}
 
+	function initials(name) {
+		return String(name).trim().split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase() || "?";
+	}
+
 	function guestCardHtml(g, room) {
 		const other = room === "green" ? "main" : "green";
-		const otherLabel = room === "green" ? "🚀 Send to broadcast" : "↩ Back to green room";
-		const badges = [
-			g.queued ? "⏳ waiting room" : "",
-			g.handUp ? "✋ HAND UP" : "",
-			g.recording ? "🔴 REC" : "",
-			g.micMuted ? "🔇 muted" : ""
-		].filter(Boolean).join(" · ");
+		const otherLabel = room === "green"
+			? '<i class="las la-paper-plane"></i> Send to broadcast'
+			: '<i class="las la-undo"></i> Back to green room';
+		const chips = [
+			g.queued ? '<span class="chip wait"><i class="las la-hourglass-half"></i> waiting</span>' : "",
+			g.handUp ? '<span class="chip hand"><i class="las la-hand-paper"></i> HAND UP</span>' : "",
+			g.recording ? '<span class="chip rec"><i class="las la-dot-circle"></i> REC</span>' : "",
+			g.micMuted ? '<span class="chip mute"><i class="las la-microphone-slash"></i> muted</span>' : ""
+		].filter(Boolean).join("");
 		return `<div class="guestCard ${g.queued ? "queued" : ""} ${g.handUp ? "hand" : ""} ${g.whisper ? "whispering" : ""}" data-sid="${g.sid}" data-uuid="${g.uuid}">
+			<div class="avatar">${initials(g.label)}<span class="hdot ${g.health}" title="${HEALTH_TITLE[g.health]}"></span></div>
 			<div class="who">
-				<b><span class="hdot ${g.health}" title="${HEALTH_TITLE[g.health]}"></span>${escapeHtml(g.label)}</b>
-				<span class="mono">${g.sid}${badges ? " · " + badges : ""}</span>
-				${g.note ? `<span class="note">📝 ${escapeHtml(g.note)}</span>` : ""}
+				<b>${escapeHtml(g.label)}</b>
+				<div class="meta"><span class="sid mono">${g.sid}</span>${chips}</div>
+				${g.note ? `<span class="note"><i class="las la-sticky-note"></i> ${escapeHtml(g.note)}</span>` : ""}
 			</div>
 			<div class="acts">
-				${g.queued ? `<button class="btn sm good" data-act="admit">✚ Admit</button>` : `<button class="btn sm primary" data-act="move" data-to="${other}">${otherLabel}</button>`}
-				<button class="btn sm ${g.whisper ? "active" : ""}" data-act="whisper" title="Whisper: only this guest hears you — never the stream">🎧</button>
-				<button class="btn sm" data-act="cue" title="Send an on-screen message to this guest">📣</button>
-				<button class="btn sm" data-act="mic" title="Toggle their microphone">${g.micMuted ? "🔇" : "🎙️"}</button>
-				<button class="btn sm" data-act="cam" title="Toggle their camera">🎥</button>
-				<button class="btn sm ${g.recording ? "active" : ""}" data-act="rec" title="Record this guest (saves to this computer)">⏺</button>
+				${g.queued ? `<button class="btn sm good" data-act="admit"><i class="las la-plus"></i> Admit</button>` : `<button class="btn sm primary" data-act="move" data-to="${other}">${otherLabel}</button>`}
+				<button class="btn sm icon ${g.whisper ? "active" : ""}" data-act="whisper" title="Whisper: only this guest hears you — never the stream"><i class="las la-headset"></i></button>
+				<button class="btn sm icon" data-act="cue" title="Send an on-screen message to this guest"><i class="las la-bullhorn"></i></button>
+				<button class="btn sm icon" data-act="mic" title="Toggle their microphone"><i class="las ${g.micMuted ? "la-microphone-slash" : "la-microphone"}"></i></button>
+				<button class="btn sm icon" data-act="cam" title="Toggle their camera"><i class="las la-video"></i></button>
+				<button class="btn sm icon ${g.recording ? "active" : ""}" data-act="rec" title="Record this guest (saves to this computer)"><i class="las la-dot-circle"></i></button>
 				<button class="btn sm" data-act="solo" title="Copy OBS solo link for this guest">Solo link</button>
-				<button class="btn sm" data-act="note" title="Private note (only producers see it)">📝</button>
-				<button class="btn sm danger" data-act="kick" title="Disconnect this guest">✕</button>
+				<button class="btn sm icon" data-act="note" title="Private note (only producers see it)"><i class="las la-sticky-note"></i></button>
+				<button class="btn sm icon danger" data-act="kick" title="Disconnect this guest"><i class="las la-times"></i></button>
 			</div>
 		</div>`;
 	}
