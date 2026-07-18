@@ -282,6 +282,39 @@
 					<button class="btn" id="newEventBtn" title="Generates fresh room names — old links stop working"><i class="las la-sync"></i> New event (fresh rooms)</button>
 				</div>
 				<div class="card">
+					<h3><i class="las la-sliders-h"></i> Guest features &amp; audio</h3>
+					<label class="checkline" style="margin-bottom:11px"><input type="checkbox" id="ngChk" /> <span><b>Noise gate</b> — auto-duck guest mics when they aren't speaking (kills keyboard clatter &amp; room noise)</span></label>
+					<label class="checkline" style="margin-bottom:11px"><input type="checkbox" id="paChk" /> <span><b>Pro audio</b> — 256&nbsp;kbps stereo, unprocessed. For music &amp; performances; guests must wear headphones</span></label>
+					<label class="checkline" style="margin-bottom:11px"><input type="checkbox" id="tallyChk" /> <span><b>On-air tally</b> — red indicator on the guest's screen whenever their feed is live in OBS</span></label>
+					<label class="checkline" style="margin-bottom:11px"><input type="checkbox" id="dcChk" /> <span><b>Private chat</b> — guest chat messages go only to producers, not to other guests</span></label>
+					<label class="checkline" style="margin-bottom:11px"><input type="checkbox" id="ccChk" /> <span><b>Live captions</b> — transcribe guest speech (Chrome) and show captions on the OBS feeds</span></label>
+					<p class="small muted" style="line-height:1.6; margin-bottom:0">Changes bake into the links — re-copy the guest invite and OBS links after saving. Guests already connected keep their old settings until they rejoin.</p>
+				</div>
+				<div class="card">
+					<h3><i class="las la-photo-video"></i> Broadcast &amp; recording</h3>
+					<div class="field"><label>Standby message (shown in OBS when no one is live)</label><input type="text" id="setWaitMsg" placeholder="e.g. At Dawn — starting soon" /></div>
+					<div class="field"><label>Standby image URL (optional, https)</label><input type="text" id="setWaitImg" placeholder="https://…/starting-soon.png" /></div>
+					<div class="field"><label>Recording quality (manual &amp; auto-record)</label>
+						<select id="setRecMode">
+							<option value="2500">Standard video — 2.5 Mbps</option>
+							<option value="6000">High-quality video — 6 Mbps</option>
+							<option value="12000">Maximum video — 12 Mbps</option>
+							<option value="-256">Audio only — Opus 256 kbps (podcast)</option>
+							<option value="0">Audio only — lossless PCM (huge files)</option>
+						</select>
+					</div>
+					<p class="small muted" style="line-height:1.6; margin-bottom:0">Recordings save to this computer's downloads folder. Standby settings apply to newly copied OBS links.</p>
+				</div>
+				<div class="card">
+					<h3><i class="las la-th-large"></i> Stream Deck &amp; remote control</h3>
+					<p class="small muted" style="line-height:1.6">Drive the studio from a Stream Deck (free <b>Bitfocus Companion</b> app, "VDO.Ninja" module) or any HTTP request. Each room gets its own key — add them as two Companion instances. This control room must stay open for commands to work.</p>
+					<div class="field"><label>API key</label><input type="text" id="setApiKey" placeholder="Leave empty to disable" /></div>
+					<button class="btn" id="genApiBtn"><i class="las la-magic"></i> Generate key</button>
+					<div id="apiKeyInfo" class="hidden">
+						<code class="snippet">Green room key: &nbsp;<span id="apiKeyGreen"></span><br />Broadcast key: &nbsp;&nbsp;<span id="apiKeyMain"></span><br /><br />HTTP: https://api.vdo.ninja/&lt;key&gt;/&lt;action&gt;</code>
+					</div>
+				</div>
+				<div class="card">
 					<h3><i class="las la-key"></i> Admin password</h3>
 					<p class="small muted" style="line-height:1.6">The dashboard password is stored as a hash in <span class="mono">studio/config.js</span>. Generate a new hash here, then paste it into that file on your server.</p>
 					<div class="field"><label>New admin password</label><input type="text" id="newAdminPwd" /></div>
@@ -321,6 +354,9 @@
 			};
 			saveEvent();
 		}
+		// feature defaults (also upgrades events saved by older versions)
+		if (EV.tally === undefined) EV.tally = true;
+		if (EV.recMode === undefined) EV.recMode = "6000";
 	}
 	function saveEvent() { localStorage.setItem(LS_KEY, JSON.stringify(EV)); }
 	function cdPass() { return "cd_" + (EV.pwd || "x"); } // shared co-director password → extra dashboards become co-directors
@@ -363,6 +399,16 @@
 		$("setGreen").value = EV.green;
 		$("setMain").value = EV.main;
 		$("setPwd").value = EV.pwd;
+		$("ngChk").checked = !!EV.noiseGate;
+		$("paChk").checked = !!EV.proAudio;
+		$("tallyChk").checked = EV.tally !== false;
+		$("dcChk").checked = !!EV.dirChat;
+		$("ccChk").checked = !!EV.captions;
+		$("setWaitMsg").value = EV.waitMsg || "";
+		$("setWaitImg").value = EV.waitImg || "";
+		$("setRecMode").value = String(EV.recMode);
+		$("setApiKey").value = EV.apiKey || "";
+		renderApiInfo();
 	}
 
 	function directorUrl(room) {
@@ -375,7 +421,9 @@
 			password: EV.pwd || false,
 			codirector: cdPass(),
 			hidetranslate: null,
-			tips: 0
+			tips: 0,
+			// Stream Deck / Companion remote control — one key per room
+			api: EV.apiKey ? EV.apiKey + (room === EV.green ? "_green" : "_main") : false
 		});
 	}
 	function mountDirectors() {
@@ -402,18 +450,33 @@
 	function guestLink() {
 		const payload = { v: 1, n: EV.name, b: CFG.brandName, g: EV.green, m: EV.main, ask: !!EV.ask };
 		if (!EV.ask) payload.p = EV.pwd;
+		// feature flags baked into the invite (join.html translates them to VDO params)
+		const o = {};
+		if (EV.noiseGate) o.ng = 1;
+		if (EV.proAudio) o.pa = 1;
+		if (EV.tally !== false) o.ty = 1;
+		if (EV.dirChat) o.dc = 1;
+		if (EV.captions) o.ts = 1;
+		if (Object.keys(o).length) payload.o = o;
 		return new URL("join.html?e=" + Studio.b64uEncode(payload), location.href).href;
+	}
+	function obsExtras(p) {
+		if (EV.proAudio) p.proaudio = null;    // must match the guest side for 256kbps stereo passthrough
+		if (EV.captions) p.closedcaptions = null;
+		if (EV.waitMsg) p.waitmessage = EV.waitMsg;
+		if (EV.waitImg) p.waitimage = EV.waitImg;
+		return p;
 	}
 	function sceneLink(room) {
 		const p = { scene: null, room: room };
 		if (EV.pwd) p.password = EV.pwd;
 		if (EV.labels) { p.showlabels = null; p.fontsize = 6; }
-		return Studio.buildUrl(Studio.vdoAbsBase(), p);
+		return Studio.buildUrl(Studio.vdoAbsBase(), obsExtras(p));
 	}
 	function soloLink(sid, room) {
 		const p = { view: sid, solo: null, room: room };
 		if (EV.pwd) p.password = EV.pwd;
-		return Studio.buildUrl(Studio.vdoAbsBase(), p);
+		return Studio.buildUrl(Studio.vdoAbsBase(), obsExtras(p));
 	}
 	const LINKS = {
 		guest: () => guestLink(),
@@ -442,6 +505,50 @@
 		saveEvent();
 		Studio.toast(EV.autoRec ? "Guests will auto-record while on air" : "Auto-record off");
 	});
+
+	/* ---------- guest feature toggles ---------- */
+	[["ngChk", "noiseGate"], ["paChk", "proAudio"], ["tallyChk", "tally"], ["dcChk", "dirChat"], ["ccChk", "captions"]].forEach(([id, key]) => {
+		$(id).addEventListener("change", () => {
+			EV[key] = $(id).checked;
+			saveEvent();
+			Studio.toast("Saved — re-copy the guest & OBS links to apply");
+		});
+	});
+	$("setWaitMsg").addEventListener("change", () => {
+		EV.waitMsg = $("setWaitMsg").value.trim();
+		saveEvent();
+		Studio.toast("Saved — re-copy the OBS links to apply");
+	});
+	$("setWaitImg").addEventListener("change", () => {
+		EV.waitImg = $("setWaitImg").value.trim();
+		saveEvent();
+		Studio.toast("Saved — re-copy the OBS links to apply");
+	});
+	$("setRecMode").addEventListener("change", () => {
+		EV.recMode = $("setRecMode").value;
+		saveEvent();
+		Studio.toast("Recording quality saved");
+	});
+
+	/* ---------- Stream Deck / Companion API ---------- */
+	function renderApiInfo() {
+		const has = !!EV.apiKey;
+		$("apiKeyInfo").classList.toggle("hidden", !has);
+		if (has) {
+			$("apiKeyGreen").textContent = EV.apiKey + "_green";
+			$("apiKeyMain").textContent = EV.apiKey + "_main";
+		}
+	}
+	function applyApiKey(raw) {
+		EV.apiKey = Studio.sanitizeId(raw || "");
+		$("setApiKey").value = EV.apiKey;
+		saveEvent();
+		renderApiInfo();
+		mountDirectors(); // directors must reload with &api to start listening
+		Studio.toast(EV.apiKey ? "Remote control on — rooms reconnected with API keys" : "Remote control off");
+	}
+	$("setApiKey").addEventListener("change", () => applyApiKey($("setApiKey").value));
+	$("genApiBtn").addEventListener("click", () => applyApiKey("atdawn_" + Studio.randId(8)));
 
 	/* ================= TALKBACK (producer voice — never reaches the stream) ================= */
 	// per-room talk state: "off" | "room" | "<uuid>" (whispering to one guest)
@@ -571,14 +678,19 @@
 	try { NOTES = JSON.parse(localStorage.getItem("studio_notes_v1")) || {}; } catch (e) {}
 	function saveNotes() { localStorage.setItem("studio_notes_v1", JSON.stringify(NOTES)); }
 
-	const REC_KBPS = 6000; // recording bitrate; skips VDO's prompt
+	// recording bitrate from settings; giving recordVideo a value skips VDO's prompt.
+	// Positive = video kbps · negative = audio-only Opus at |kbps| · 0 = audio-only lossless PCM
+	function recKbps() {
+		const v = parseInt(EV.recMode, 10);
+		return isNaN(v) ? 6000 : v;
+	}
 	function toggleRecord(frame, sid) {
 		try {
 			const w = frame.contentWindow;
 			for (const uuid in w.session.rpcs) {
 				if (w.session.rpcs[uuid] && w.session.rpcs[uuid].streamID === sid) {
 					const el = w.document.querySelector('[data-action-type="recorder-local"][data--u-u-i-d="' + uuid + '"]');
-					if (el) { w.recordVideo(el, null, REC_KBPS); return true; }
+					if (el) { w.recordVideo(el, null, recKbps()); return true; }
 				}
 			}
 		} catch (e) { console.warn(e); }
@@ -629,6 +741,7 @@
 					micMuted: rpc.directorMutedState == 1,
 					recording: !!(rpc.videoElement && rpc.videoElement.recording),
 					whisper: solos.includes(uuid),
+					groups: Array.isArray(rpc.group) ? rpc.group.slice().sort() : [],
 					health: healthOf(rpc),
 					note: NOTES[rpc.streamID] || ""
 				});
@@ -650,7 +763,8 @@
 			g.queued ? '<span class="chip wait"><i class="las la-hourglass-half"></i> waiting</span>' : "",
 			g.handUp ? '<span class="chip hand"><i class="las la-hand-paper"></i> HAND UP</span>' : "",
 			g.recording ? '<span class="chip rec"><i class="las la-dot-circle"></i> REC</span>' : "",
-			g.micMuted ? '<span class="chip mute"><i class="las la-microphone-slash"></i> muted</span>' : ""
+			g.micMuted ? '<span class="chip mute"><i class="las la-microphone-slash"></i> muted</span>' : "",
+			(g.groups || []).map(h => '<span class="chip grp"><i class="las la-user-friends"></i> huddle ' + escapeHtml(h) + "</span>").join("")
 		].filter(Boolean).join("");
 		return `<div class="guestCard ${g.queued ? "queued" : ""} ${g.handUp ? "hand" : ""} ${g.whisper ? "whispering" : ""}" data-sid="${g.sid}" data-uuid="${g.uuid}">
 			<div class="avatar">${initials(g.label)}<span class="hdot ${g.health}" title="${HEALTH_TITLE[g.health]}"></span></div>
@@ -666,6 +780,7 @@
 				<button class="btn sm icon" data-act="mic" title="Toggle their microphone"><i class="las ${g.micMuted ? "la-microphone-slash" : "la-microphone"}"></i></button>
 				<button class="btn sm icon" data-act="cam" title="Toggle their camera"><i class="las la-video"></i></button>
 				<button class="btn sm icon ${g.recording ? "active" : ""}" data-act="rec" title="Record this guest (saves to this computer)"><i class="las la-dot-circle"></i></button>
+				<button class="btn sm icon ${(g.groups || []).length ? "active" : ""}" data-act="huddle" title="Private huddle: guests in different huddles can't hear each other — producers and the broadcast still get everyone"><i class="las la-user-friends"></i></button>
 				<button class="btn sm" data-act="solo" title="Copy OBS solo link for this guest">Solo link</button>
 				<button class="btn sm icon" data-act="note" title="Private note (only producers see it)"><i class="las la-sticky-note"></i></button>
 				<button class="btn sm icon danger" data-act="kick" title="Disconnect this guest"><i class="las la-times"></i></button>
@@ -730,6 +845,28 @@
 			showMenu(btn, CUES.map(c => ({ label: c, fn: () => { sendCueTo(frame, sid, "📣 " + c); Studio.toast("Cue sent"); } }))
 				.concat([{ label: "Custom message…", fn: () => { const t = prompt("Message for " + label + ":"); if (t) { sendCueTo(frame, sid, "📣 " + t); Studio.toast("Cue sent"); } } }]));
 			return; // menu stays open; skip the refresh below
+		} else if (act === "huddle") {
+			const uuid = card.dataset.uuid;
+			const g = (inGreen ? lastGreen : lastMain).find(x => x.uuid === uuid) || { groups: [] };
+			const items = ["1", "2", "3"].map(n => ({
+				label: (g.groups.includes(n) ? "✓ " : "") + "Huddle " + n,
+				fn: () => {
+					const joining = !g.groups.includes(n);
+					if (setGuestGroup(frame, uuid, n, joining)) {
+						Studio.toast(joining ? "Added to huddle " + n + " — they only hear their huddle now" : "Removed from huddle " + n);
+					}
+					setTimeout(refreshGuests, 500);
+				}
+			}));
+			if (g.groups.length) items.push({
+				label: "Leave all huddles",
+				fn: () => {
+					if (setGuestGroup(frame, uuid, null, false)) Studio.toast("Back with everyone");
+					setTimeout(refreshGuests, 500);
+				}
+			});
+			showMenu(btn, items);
+			return; // menu stays open; skip the refresh below
 		} else if (act === "note") {
 			const t = prompt("Private note for this guest (producers only):", NOTES[sid] || "");
 			if (t !== null) {
@@ -760,6 +897,31 @@
 		}
 		setTimeout(refreshGuests, 600);
 	});
+
+	// same-origin mirror of VDO's changeGroup(): update the rpc's group list and push it to the guest.
+	// group === null clears every huddle.
+	function setGuestGroup(frame, uuid, group, on) {
+		try {
+			const w = frame.contentWindow;
+			const rpc = w.session.rpcs[uuid];
+			if (!rpc) throw new Error("guest gone");
+			rpc.group = Array.isArray(rpc.group) ? rpc.group : [];
+			if (group === null) {
+				rpc.group = [];
+			} else {
+				const i = rpc.group.indexOf(group);
+				if (on && i === -1) rpc.group.push(group);
+				else if (!on && i > -1) rpc.group.splice(i, 1);
+			}
+			w.session.sendRequest({ group: rpc.group.length ? rpc.group.join(",") : false }, uuid);
+			try { if (typeof w.updateMixer === "function") w.updateMixer(); } catch (e2) {}
+			return true;
+		} catch (e) {
+			console.warn(e);
+			Studio.toast("Couldn't change huddles — is the guest still connected?", true);
+			return false;
+		}
+	}
 
 	function clickDirectorButton(frame, sid, type) {
 		try {

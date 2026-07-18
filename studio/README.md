@@ -72,7 +72,9 @@ OBS scene** — the stream cannot hear or see any of this:
 ## Guest tools
 
 Guests get: mic, camera, **background blur**, **✋ raise hand** (shows instantly on your
-guest board with an amber highlight), chat, settings (device switching), leave.
+guest board with an amber highlight), chat, settings (device switching), leave. If the
+producer enables the **on-air tally**, a red indicator lights up on the guest's screen
+whenever their feed is actually live in an OBS scene.
 
 ## Guest board extras
 
@@ -80,11 +82,42 @@ guest board with an amber highlight), chat, settings (device switching), leave.
   stats — spot a failing connection before your audience does.
 - **📝 Notes**: private per-guest notes only producers see ("needs new mic", "intro at
   :15"). Saved in your browser.
-- **⏺ Record** now starts instantly (6 Mbps, no dialog). **Auto-record while on air**
-  (checkbox in the OBS card) starts a recording the moment any guest lands in the main
-  room; files download to the producer's computer.
+- **⏺ Record** starts instantly at the quality chosen in Settings (no dialog).
+  **Auto-record while on air** (checkbox in the OBS card) starts a recording the moment
+  any guest lands in the main room; files download to the producer's computer.
+- **👥 Huddles** (per guest): private sub-groups inside a room. Guests in different
+  huddles can't see or hear each other — but producers, non-huddled guests and the OBS
+  feeds still get everyone. Perfect for letting co-hosts confer while another guest is
+  being staged. Assign/remove from the huddle button on any guest card (up to 3 huddles
+  per room, guests can be in several).
 - **Name labels on OBS mixes** (checkbox): re-copy the scene links to include guest
   name overlays.
+
+## Show settings (Settings tab)
+
+All of these are baked into the links you copy — re-copy the guest invite and OBS links
+after changing them:
+
+- **Noise gate**: auto-ducks each guest's mic while they aren't speaking — kills
+  keyboard clatter and room noise from guests in bad rooms.
+- **Pro audio**: 256 kbps unprocessed stereo for music and performances. Must be on
+  before links are shared (it applies to both guest and OBS links); guests are shown a
+  "wear headphones" notice on the join page.
+- **On-air tally**: guests get a clear red on-air indicator driven by what's actually
+  in your OBS scene (on by default).
+- **Private chat**: guest text chat goes only to producers instead of the whole room.
+- **Live captions**: guests' speech is transcribed in their browser (Chrome) and shown
+  as caption overlays on the OBS scene links — instant accessibility.
+- **Standby message / image**: branded "starting soon" slate shown in OBS whenever a
+  scene has no live video, instead of black.
+- **Recording quality**: 2.5/6/12 Mbps video, or audio-only (Opus 256 kbps for
+  podcasts, or lossless PCM). Applies to manual and auto record.
+- **Stream Deck & remote control**: generate an API key and the two director
+  connections register with VDO.Ninja's remote-control API
+  (`https://api.vdo.ninja/<key>/<action>`). Add the keys to the free
+  [Bitfocus Companion](https://bitfocus.io/companion) "VDO.Ninja" module — one instance
+  per room — and drive mutes, transfers, scenes and more from physical Stream Deck
+  buttons. The control room tab must stay open for commands to work.
 
 ## Deploying
 

@@ -153,6 +153,7 @@
 			<div class="step"><i class="las la-video"></i><span>Camera check</span></div>
 			<div class="step"><i class="las la-couch"></i><span>Waiting room</span></div>
 		</div>
+		<div id="paNote" class="small hidden" style="margin: -6px 0 18px 0; padding: 10px 14px; border: 1px solid rgba(246,167,92,0.35); border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent); line-height: 1.5;"><i class="las la-headphones"></i> This show uses studio-quality audio — please wear headphones to avoid echo.</div>
 		<div class="field">
 			<label for="guestName">Your name (shown on screen)</label>
 			<input type="text" id="guestName" maxlength="40" placeholder="e.g. Jane Smith" autocomplete="name" />
@@ -256,6 +257,7 @@
 	$("brandName").textContent = $("brandName2").textContent = $("brandName3").textContent = EV.b || Studio.CFG.brandName || "Studio";
 	$("eventName").textContent = EV.n || "Live Event";
 	if (EV.ask) $("pwdField").classList.remove("hidden");
+	if (EV.o && EV.o.pa) $("paNote").classList.remove("hidden"); // pro audio → headphones reminder
 
 	const savedName = localStorage.getItem("studio_guest_name");
 	if (savedName) $("guestName").value = savedName;
@@ -384,6 +386,13 @@
 			tips: 0
 		};
 		if (pwd) params.password = pwd;
+		// producer-chosen feature flags baked into the invite (see admin.html guestLink)
+		const o = EV.o || {};
+		if (o.ng) params.noisegate = null;     // auto-duck mic when not speaking
+		if (o.pa) params.proaudio = null;      // 256kbps stereo, unprocessed (headphones!)
+		if (o.ty) params.tally = null;         // big on-air indicator when live in OBS
+		if (o.dc) params.directorchat = null;  // chat goes only to producers
+		if (o.ts) params.transcribe = null;    // speech-to-text captions into the room
 		iframe.src = Studio.buildUrl(Studio.vdoBase(), params);
 
 		$("lobby").classList.add("hidden");
