@@ -121,6 +121,23 @@ after changing them:
 
 ## Deploying
 
+### Pushing updates to GitHub (the normal workflow)
+
+This repo is already connected to **`github.com/Jokeroker/atdawn-studio`** (branch `main`),
+which GitHub Pages serves. The git repo lives in the **web-root** folder
+(`vdo.ninja-30.2/vdo.ninja-30.2/`), *not* the top-level project folder — so edit the
+files in this `/studio/` folder as usual, then from the top-level project folder run:
+
+```powershell
+.\deploy.ps1
+```
+
+That one script commits any changes, pushes to `main`, and keeps Pages enabled. The site
+goes live 1–3 minutes later at `https://jokeroker.github.io/atdawn-studio/studio/`.
+It only needs a one-time `gh auth login` if the GitHub CLI ever reports you're signed out.
+
+### Hosting options
+
 This folder deploys with the rest of VDO.Ninja — any static hosting works:
 
 - **GitHub Pages** (easiest, free, SSL included): fork/push this whole repo and enable
