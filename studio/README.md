@@ -55,6 +55,10 @@ both rooms, so two admins can run green room and broadcast simultaneously.
 Your voice and messages go through the director connection, which is **never part of an
 OBS scene** — the stream cannot hear or see any of this:
 
+- **🎧 Listen** (per room): one click and that room's audio plays in *your* headphones —
+  guests aren't notified and the stream is untouched. Exclusive like PFL on a mixing
+  desk: listening to one room stops the other. Works identically for co-producers on
+  their own dashboards (each listens locally).
 - **🎙️ Talk** (per room): your mic to everyone in that room. First use asks for browser
   mic permission. Click again to stop. Classic use: "we're live in 30 seconds" to the
   green room, or producer notes to the on-air panel (audience hears nothing — though if
@@ -75,6 +79,19 @@ Guests get: mic, camera, **background blur**, **✋ raise hand** (shows instantl
 guest board with an amber highlight), chat, settings (device switching), leave. If the
 producer enables the **on-air tally**, a red indicator lights up on the guest's screen
 whenever their feed is actually live in an OBS scene.
+
+## Room tabs (Green Room / Main Broadcast)
+
+Each room has its own studio-styled tab — no raw VDO.Ninja UI anywhere:
+
+- **Live monitor**: a silent auto-mixed view of everyone in the room (exactly what an
+  OBS mix source would show), loaded the first time you open the tab. Audio never comes
+  from the monitor — press **Listen** for that.
+- The full **room toolbar** (Listen / Talk / Cue all / Timer / Mute all / Unmute) and
+  the same guest cards as the Overview board, so you can run the room from either place.
+- **Advanced**: opens VDO.Ninja's full director console in a new tab for the rare
+  per-guest deep controls (gain, EQ, bitrate caps, scene assignment). Everyday actions
+  never need it.
 
 ## Guest board extras
 

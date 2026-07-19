@@ -58,17 +58,14 @@
 	.viewTitle { font-size: 1.35rem; margin-bottom: 24px; letter-spacing: -0.02em; }
 
 	.viewHead {
-		display: flex; align-items: center; gap: 12px;
-		height: 54px; padding: 0 20px;
+		display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+		min-height: 54px; padding: 8px 20px;
 		background: rgba(10, 13, 20, 0.65); backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--line); flex: none;
 	}
 	.viewHead h2 { margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 9px; }
 	.viewHead h2 i.las { color: var(--accent); font-size: 1.15rem; }
 	.viewHead .spacer { flex: 1; }
-	.frameWrap { flex: 1; min-height: 0; position: relative; background: #000; }
-	.frameWrap iframe { position: absolute; inset: 0; }
-
 	/* ----- overview ----- */
 	.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; max-width: 1240px; }
 	.linkRow { display: flex; align-items: center; gap: 12px; padding: 11px 0; }
@@ -136,6 +133,54 @@
 		font-family: "Cascadia Code", Consolas, monospace;
 	}
 
+	/* ----- link mini-cards (deck layout) ----- */
+	.miniGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 14px; max-width: 1240px; margin-top: 30px; }
+	.miniCard {
+		background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+		padding: 16px 18px; box-shadow: var(--shadow-1);
+		display: flex; flex-direction: column; gap: 6px;
+	}
+	.miniCard b { font-size: 0.88rem; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+	.miniCard b i.las { color: var(--accent); font-size: 1.05rem; }
+	.miniCard span { color: var(--text-dim); font-size: 0.74rem; line-height: 1.55; flex: 1; }
+	.miniCard .btn { margin-top: 10px; align-self: flex-start; }
+	.optionsLine { display: flex; gap: 10px 28px; flex-wrap: wrap; margin-top: 18px; max-width: 1240px; }
+	.optionsLine .checkline { font-size: 0.78rem; }
+
+	/* ----- room tabs (studio pass) ----- */
+	.roomTools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+	.btn.listen.active {
+		background: rgba(67, 217, 154, 0.14); border-color: rgba(67, 217, 154, 0.55);
+		color: var(--good); box-shadow: 0 0 16px rgba(67, 217, 154, 0.22);
+	}
+	.roomBody { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px; display: flex; flex-direction: column; gap: 20px; }
+	.monitorPane {
+		position: relative; flex: none; overflow: hidden;
+		border-radius: var(--r-md); border: 1px solid var(--line); background: #000;
+		aspect-ratio: 16 / 9; max-height: 46vh; width: min(100%, calc(46vh * 16 / 9)); margin: 0 auto;
+		box-shadow: var(--shadow-1);
+	}
+	.monitorPane iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: none; }
+	.monitorPane iframe.on { display: block; }
+	.monitorPane .monEmpty {
+		position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+		color: var(--text-faint); font-size: 0.85rem; text-align: center; padding: 20px; line-height: 1.6;
+	}
+	.monitorPane .monTag {
+		position: absolute; left: 10px; top: 10px; z-index: 2;
+		background: rgba(10, 13, 20, 0.72); border: 1px solid var(--line); border-radius: 999px;
+		color: var(--text-dim); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+		padding: 4px 10px; backdrop-filter: blur(8px);
+		display: flex; gap: 7px; align-items: center;
+	}
+	.monitorPane .monTag .hdot { width: 7px; height: 7px; }
+	.monitorPane .monTag.live { border-color: rgba(67, 217, 154, 0.5); color: var(--good); }
+	.roomGuests { max-width: 1240px; width: 100%; margin: 0 auto; }
+
+	/* the two director connections live here, always mounted, never visible */
+	#engineHold { position: fixed; left: -9999px; top: 0; width: 640px; height: 360px; opacity: 0; pointer-events: none; }
+	#engineHold iframe { width: 100%; height: 100%; border: 0; }
+
 	/* ----- popover menu ----- */
 	#popMenu {
 		position: fixed; z-index: 300;
@@ -185,86 +230,119 @@
 		<!-- ---------- OVERVIEW ---------- -->
 		<div class="view pad active" id="view-overview">
 			<h2 class="viewTitle">Overview &amp; Links</h2>
-			<div class="grid">
-				<div class="card">
-					<h3><i class="las la-link"></i> Invite people</h3>
-					<div class="linkRow">
-						<div class="desc"><b>Guest invite link</b><span>Send to guests — name prompt, waiting room, green room</span></div>
-						<button class="btn sm primary" data-copy="guest"><i class="las la-copy"></i> Copy</button>
-					</div>
-					<div class="linkRow">
-						<div class="desc"><b>Co-producer dashboard</b><span>This control room — they log in with the admin password</span></div>
-						<button class="btn sm" data-copy="admin"><i class="las la-copy"></i> Copy</button>
-					</div>
-					<hr class="sep" />
-					<label class="checkline"><input type="checkbox" id="askPwdChk" /> Guests must type the event password (don't embed it in the link)</label>
-				</div>
-
-				<div class="card">
-					<h3><i class="las la-photo-video"></i> OBS browser sources</h3>
-					<div class="linkRow">
-						<div class="desc"><b>Main broadcast — full mix</b><span>Auto-mixed scene of everyone in the main room</span></div>
-						<button class="btn sm primary" data-copy="sceneMain"><i class="las la-copy"></i> Copy</button>
-					</div>
-					<div class="linkRow">
-						<div class="desc"><b>Green room — full mix</b><span>Monitor or program feed of the green room</span></div>
-						<button class="btn sm" data-copy="sceneGreen"><i class="las la-copy"></i> Copy</button>
-					</div>
-					<p class="small muted" style="margin-top:12px; line-height:1.6">Per-guest solo feeds: use the <b>Solo link</b> button on any guest below. In OBS set sources to 1920×1080 and check "Control audio via OBS".</p>
-					<hr class="sep" />
-					<label class="checkline" style="margin-bottom:9px"><input type="checkbox" id="labelsChk" /> Show name labels on the OBS mixes</label>
-					<label class="checkline"><input type="checkbox" id="autoRecChk" /> Auto-record every guest while they're on air (saves to this computer)</label>
-				</div>
-			</div>
 
 			<div id="guestBoard">
 				<div class="twoCol">
 					<div class="roomCol">
 						<h3><i class="las la-couch"></i> Green room <span class="cnt" id="cntGreen">0</span></h3>
 						<div class="colTools">
+							<button class="btn sm listen" data-room="green" data-tool="listen" title="Hear this room in your headphones — guests aren't told and the stream never hears it"><i class="las la-headphones"></i> Listen</button>
 							<button class="btn sm talk" data-room="green" data-tool="talk" title="Your voice to everyone in the green room — never reaches the stream"><i class="las la-microphone"></i> Talk</button>
 							<button class="btn sm" data-room="green" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
 							<button class="btn sm" data-room="green" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
 							<button class="btn sm" data-room="green" data-tool="muteAll" title="Cut every mic in this room"><i class="las la-volume-mute"></i> Mute all</button>
 							<button class="btn sm" data-room="green" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
 						</div>
-						<div id="listGreen"><div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div></div>
+						<div id="listGreen" data-guestlist="green"><div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div></div>
 					</div>
 					<div class="roomCol">
 						<h3><i class="las la-broadcast-tower"></i> Main broadcast <span class="cnt" id="cntMain">0</span></h3>
 						<div class="colTools">
+							<button class="btn sm listen" data-room="main" data-tool="listen" title="Hear the broadcast room in your headphones — the stream never hears it"><i class="las la-headphones"></i> Listen</button>
 							<button class="btn sm talk" data-room="main" data-tool="talk" title="Your voice to everyone on air (guests only — the stream never hears you)"><i class="las la-microphone"></i> Talk</button>
 							<button class="btn sm" data-room="main" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
 							<button class="btn sm" data-room="main" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
 							<button class="btn sm" data-room="main" data-tool="muteAll" title="Panic button: cut every mic on air"><i class="las la-volume-mute"></i> Mute all</button>
 							<button class="btn sm" data-room="main" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
 						</div>
-						<div id="listMain"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
+						<div id="listMain" data-guestlist="main"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
 					</div>
 				</div>
+			</div>
+
+			<div class="miniGrid">
+				<div class="miniCard">
+					<b><i class="las la-link"></i> Guest invite link</b>
+					<span>One link for every guest — name prompt, camera check, waiting room.</span>
+					<button class="btn sm primary" data-copy="guest"><i class="las la-copy"></i> Copy</button>
+				</div>
+				<div class="miniCard">
+					<b><i class="las la-user-shield"></i> Co-producer dashboard</b>
+					<span>This control room — producers log in with the admin password and get every control on this page.</span>
+					<button class="btn sm" data-copy="admin"><i class="las la-copy"></i> Copy</button>
+				</div>
+				<div class="miniCard">
+					<b><i class="las la-photo-video"></i> Main broadcast — OBS mix</b>
+					<span>Auto-mixed scene of everyone on air. 1920×1080, "Control audio via OBS" on.</span>
+					<button class="btn sm primary" data-copy="sceneMain"><i class="las la-copy"></i> Copy</button>
+				</div>
+				<div class="miniCard">
+					<b><i class="las la-couch"></i> Green room — OBS mix</b>
+					<span>Monitor or program feed of the green room, mixed the same way.</span>
+					<button class="btn sm" data-copy="sceneGreen"><i class="las la-copy"></i> Copy</button>
+				</div>
+				<div class="miniCard">
+					<b><i class="las la-headset"></i> Solo feeds</b>
+					<span>Per-guest OBS source with its own audio fader — press <b style="font-size:inherit">Solo link</b> on any guest card above. Re-copy it if the guest changes rooms.</span>
+				</div>
+			</div>
+
+			<div class="optionsLine">
+				<label class="checkline"><input type="checkbox" id="askPwdChk" /> Guests must type the event password (don't embed it in the link)</label>
+				<label class="checkline"><input type="checkbox" id="labelsChk" /> Show name labels on the OBS mixes</label>
+				<label class="checkline"><input type="checkbox" id="autoRecChk" /> Auto-record every guest while they're on air (saves to this computer)</label>
 			</div>
 			<div id="popMenu"></div>
 		</div>
 
-		<!-- ---------- GREEN ROOM DIRECTOR ---------- -->
+		<!-- ---------- GREEN ROOM ---------- -->
 		<div class="view" id="view-green">
 			<div class="viewHead">
-				<h2><i class="las la-couch"></i> Green Room — full director controls</h2>
+				<h2><i class="las la-couch"></i> Green Room <span class="cnt" id="cntGreenTab">0</span></h2>
+				<div class="roomTools">
+					<button class="btn sm listen" data-room="green" data-tool="listen" title="Hear this room in your headphones — guests aren't told and the stream never hears it"><i class="las la-headphones"></i> Listen</button>
+					<button class="btn sm talk" data-room="green" data-tool="talk" title="Your voice to everyone in the green room — never reaches the stream"><i class="las la-microphone"></i> Talk</button>
+					<button class="btn sm" data-room="green" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
+					<button class="btn sm" data-room="green" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
+					<button class="btn sm" data-room="green" data-tool="muteAll" title="Cut every mic in this room"><i class="las la-volume-mute"></i> Mute all</button>
+					<button class="btn sm" data-room="green" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
+				</div>
 				<div class="spacer"></div>
-				<span class="muted small">Use ✚ Activate on a guest tile to admit them from the waiting room</span>
-				<button class="btn sm" id="popGreen"><i class="las la-external-link-alt"></i> Pop out</button>
+				<button class="btn sm" id="popGreen" title="VDO.Ninja's full director console in a new tab — gain, EQ, quality and every advanced control"><i class="las la-external-link-alt"></i> Advanced</button>
 			</div>
-			<div class="frameWrap"><iframe id="dirGreen" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
+			<div class="roomBody">
+				<div class="monitorPane">
+					<div class="monEmpty">Live monitor — everyone in this room appears here the moment they connect.</div>
+					<iframe id="monGreen" allow="autoplay; fullscreen"></iframe>
+					<div class="monTag" id="tagGreen"><span class="hdot"></span> <span>Monitor · silent — press Listen to hear</span></div>
+				</div>
+				<div class="roomGuests" data-guestlist="green" id="listGreenTab"><div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div></div>
+			</div>
 		</div>
 
-		<!-- ---------- MAIN STAGE DIRECTOR ---------- -->
+		<!-- ---------- MAIN BROADCAST ---------- -->
 		<div class="view" id="view-mainstage">
 			<div class="viewHead">
-				<h2><i class="las la-broadcast-tower"></i> Main Broadcast — full director controls</h2>
+				<h2><i class="las la-broadcast-tower"></i> Main Broadcast <span class="cnt" id="cntMainTab">0</span></h2>
+				<div class="roomTools">
+					<button class="btn sm listen" data-room="main" data-tool="listen" title="Hear the broadcast room in your headphones — the stream never hears it"><i class="las la-headphones"></i> Listen</button>
+					<button class="btn sm talk" data-room="main" data-tool="talk" title="Your voice to everyone on air (guests only — the stream never hears you)"><i class="las la-microphone"></i> Talk</button>
+					<button class="btn sm" data-room="main" data-tool="cueAll" title="Send an on-screen message to everyone here"><i class="las la-bullhorn"></i> Cue all</button>
+					<button class="btn sm" data-room="main" data-tool="timer" title="Show a countdown on everyone's screen"><i class="las la-stopwatch"></i> Timer</button>
+					<button class="btn sm" data-room="main" data-tool="muteAll" title="Panic button: cut every mic on air"><i class="las la-volume-mute"></i> Mute all</button>
+					<button class="btn sm" data-room="main" data-tool="unmuteAll" title="Open every mic in this room"><i class="las la-volume-up"></i> Unmute</button>
+				</div>
 				<div class="spacer"></div>
-				<button class="btn sm" id="popMain"><i class="las la-external-link-alt"></i> Pop out</button>
+				<button class="btn sm" id="popMain" title="VDO.Ninja's full director console in a new tab — gain, EQ, quality and every advanced control"><i class="las la-external-link-alt"></i> Advanced</button>
 			</div>
-			<div class="frameWrap"><iframe id="dirMain" class="vdoframe" allow="autoplay; camera; microphone; display-capture; fullscreen; clipboard-write"></iframe></div>
+			<div class="roomBody">
+				<div class="monitorPane">
+					<div class="monEmpty">Live monitor — this matches what OBS receives from the broadcast room.</div>
+					<iframe id="monMain" allow="autoplay; fullscreen"></iframe>
+					<div class="monTag" id="tagMain"><span class="hdot"></span> <span>Monitor · silent — press Listen to hear</span></div>
+				</div>
+				<div class="roomGuests" data-guestlist="main" id="listMainTab"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
+			</div>
 		</div>
 
 		<!-- ---------- SETTINGS ---------- -->
@@ -327,6 +405,13 @@
 			</div>
 		</div>
 	</div>
+</div>
+
+<!-- hidden signaling engines: one persistent director connection per room.
+     Everything on this page (cards, talkback, listen, transfers) drives these two frames. -->
+<div id="engineHold" aria-hidden="true">
+	<iframe id="dirGreen" allow="autoplay; camera; microphone; display-capture; clipboard-write"></iframe>
+	<iframe id="dirMain" allow="autoplay; camera; microphone; display-capture; clipboard-write"></iframe>
 </div>
 
 <script src="config.js"></script>
@@ -430,11 +515,43 @@
 		$("dirGreen").src = directorUrl(EV.green);
 		$("dirMain").src = directorUrl(EV.main);
 		talk.green = talk.main = "off"; // fresh frames = mic state reset
+		listen.green = listen.main = false; // fresh frames = speakers muted again
 		renderTalkButtons();
+		renderListenButtons();
+		remountMonitors();
 	}
 	// pop-outs get a fresh push id so they can coexist with the embedded director
 	$("popGreen").addEventListener("click", () => window.open(directorUrl(EV.green), "_blank"));
 	$("popMain").addEventListener("click", () => window.open(directorUrl(EV.main), "_blank"));
+
+	/* ================= ROOM MONITORS ================= */
+	// One silent scene-view per room tab, loaded the first time the tab is opened.
+	// Audio always comes from the director engines (Listen), never from these.
+	function monitorUrl(roomName) {
+		const p = { scene: null, room: roomName, noaudio: null, showlabels: null, fontsize: 6, cleanoutput: null };
+		if (EV.pwd) p.password = EV.pwd;
+		return Studio.buildUrl(Studio.vdoBase(), p);
+	}
+	function ensureMonitor(key) {
+		const f = key === "green" ? $("monGreen") : $("monMain");
+		const roomName = key === "green" ? EV.green : EV.main;
+		if (f.dataset.room === roomName && f.src) return; // already showing this room
+		f.dataset.room = roomName;
+		f.src = monitorUrl(roomName);
+		f.classList.add("on");
+	}
+	function remountMonitors() {
+		["monGreen", "monMain"].forEach(id => {
+			const f = $(id);
+			if (!f.src) return; // never opened — stays lazy
+			f.removeAttribute("src");
+			f.classList.remove("on");
+			delete f.dataset.room;
+		});
+		const active = document.querySelector(".navItem.active");
+		if (active && active.dataset.view === "green") ensureMonitor("green");
+		if (active && active.dataset.view === "mainstage") ensureMonitor("main");
+	}
 
 	/* ================= NAV ================= */
 	document.querySelectorAll(".navItem").forEach(btn => {
@@ -443,6 +560,8 @@
 			btn.classList.add("active");
 			document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
 			$("view-" + btn.dataset.view).classList.add("active");
+			if (btn.dataset.view === "green") ensureMonitor("green");
+			if (btn.dataset.view === "mainstage") ensureMonitor("main");
 		});
 	});
 
@@ -554,6 +673,44 @@
 	// per-room talk state: "off" | "room" | "<uuid>" (whispering to one guest)
 	const talk = { green: "off", main: "off" };
 	function frameOf(room) { return room === "green" ? $("dirGreen") : $("dirMain"); }
+	function roomLabel(room) { return room === "green" ? "the green room" : "the broadcast room"; }
+
+	/* ================= LISTEN (producer ears — per room, local to this dashboard) ================= */
+	// VDO directors start with audio playback muted; Listen unmutes that room's engine frame.
+	// Exclusive by design — like PFL on a mixing desk, you monitor one room at a time.
+	const listen = { green: false, main: false };
+	function setListen(room, on) {
+		const frame = frameOf(room);
+		let w = null;
+		try { w = frame.contentWindow; if (!w || !w.session) throw 0; } catch (e) { Studio.toast("That room isn't connected yet", true); return; }
+		try {
+			if (on && listen[room === "green" ? "main" : "green"]) setListen(room === "green" ? "main" : "green", false);
+			// toggleSpeakerMute() flips from the current value — set the opposite, then toggle
+			w.session.speakerMuted = on ? true : false;
+			w.toggleSpeakerMute();
+			listen[room] = on;
+		} catch (e) {
+			console.warn(e);
+			Studio.toast("Couldn't change monitoring — try the Advanced view", true);
+			return;
+		}
+		if (on) Studio.toast("Listening to " + roomLabel(room) + " — guests aren't told, the stream never hears it");
+		renderListenButtons();
+	}
+	function renderListenButtons() {
+		document.querySelectorAll('[data-tool="listen"]').forEach(btn => {
+			const on = listen[btn.dataset.room];
+			btn.classList.toggle("active", on);
+			btn.innerHTML = on ? '<i class="las la-headphones"></i> Listening — stop' : '<i class="las la-headphones"></i> Listen';
+		});
+		[["tagGreen", "green"], ["tagMain", "main"]].forEach(([id, room]) => {
+			const tag = $(id);
+			if (!tag) return;
+			tag.classList.toggle("live", listen[room]);
+			tag.querySelector("span:last-child").textContent = listen[room] ? "Monitor · you're listening" : "Monitor · silent — press Listen to hear";
+			tag.querySelector(".hdot").className = "hdot " + (listen[room] ? "g" : "u");
+		});
+	}
 
 	// wait for the director's mic to come up (first use triggers the browser's mic permission prompt)
 	function ensureMic(w) {
@@ -649,11 +806,13 @@
 		if (!e.target.closest("#popMenu") && !e.target.closest("[data-tool]") && !e.target.closest("[data-act]")) hideMenu();
 	});
 
-	/* ================= COLUMN TOOLBARS ================= */
-	document.querySelectorAll(".colTools .btn").forEach(btn => {
+	/* ================= ROOM TOOLBARS (overview columns + room tab headers) ================= */
+	document.querySelectorAll("[data-tool][data-room]").forEach(btn => {
 		btn.addEventListener("click", () => {
 			const room = btn.dataset.room, tool = btn.dataset.tool, frame = frameOf(room);
-			if (tool === "talk") {
+			if (tool === "listen") {
+				setListen(room, !listen[room]);
+			} else if (tool === "talk") {
 				setTalk(room, talk[room] === "off" ? "room" : "off");
 			} else if (tool === "cueAll") {
 				showMenu(btn, CUES.map(c => ({ label: c, fn: () => cueRoom(room, "📣 " + c) }))
@@ -709,12 +868,33 @@
 	}
 
 	/* ================= GUEST BOARD ================= */
+	// rpc.stats is filled by VDO's own inbound stats loop (processStats, every ~3s):
+	// "Peer-to-Peer_Connection" carries totals + RTT, and each media track gets its own
+	// sub-object with Bitrate_in_kbps / packetLoss_in_percentage. Loss buckets follow
+	// VDO's director UI: <1% fine, 1–3.5% struggling, >3.5% bad.
 	function healthOf(rpc) {
 		const st = rpc.stats || {};
-		const vb = st.video_bitrate_kbps, n = st.nacks_per_second, q = st.quality_limitation_reason;
-		if (vb === undefined && n === undefined) return "u";
-		if ((typeof n === "number" && n > 20) || vb === 0) return "r";
-		if ((typeof n === "number" && n > 5) || (q && q !== "none" && q !== false)) return "y";
+		const p2p = st["Peer-to-Peer_Connection"] || {};
+		const info = st.info || {};
+		let loss, tracks = 0, videoDead = false;
+		for (const k in st) {
+			const t = st[k];
+			if (!t || typeof t !== "object" || !t._trackID) continue;
+			tracks++;
+			if (typeof t.packetLoss_in_percentage === "number") {
+				loss = Math.max(loss === undefined ? 0 : loss, t.packetLoss_in_percentage);
+			}
+			// a video track that flatlines to 0 kbps while the guest ISN'T muted =
+			// their camera died (unplugged / OS took it / encoder crashed)
+			if ((t.type === "Video Stream" || t.Resolution !== undefined) && t.Bitrate_in_kbps === 0 && !rpc.videoMuted && !info.directorVideoMuted) {
+				videoDead = true;
+			}
+		}
+		const total = p2p.total_recv_bitrate_kbps;
+		const rtt = p2p.Round_Trip_Time_ms;
+		if (!tracks && total === undefined) return "u";
+		if ((loss !== undefined && loss > 3.5) || total === 0 || videoDead) return "r";
+		if ((loss !== undefined && loss > 1) || (typeof rtt === "number" && rtt > 400)) return "y";
 		return "g";
 	}
 	const HEALTH_TITLE = { g: "Connection: good", y: "Connection: struggling (watch this one)", r: "Connection: BAD — video degraded", u: "Connection: measuring…" };
@@ -730,6 +910,10 @@
 			for (const uuid in w.session.rpcs) {
 				const rpc = w.session.rpcs[uuid];
 				if (!rpc || !rpc.streamID) continue;
+				// a guest who transferred away (or dropped) can leave a zombie rpc behind until
+				// VDO's cleanup fires — skip anything whose connection is already dead
+				const cs = rpc.connectionState || "";
+				if (cs === "failed" || cs === "closed" || cs === "disconnected") continue;
 				const rq = doc.querySelector('[data-action-type="remove-queue"][data--u-u-i-d="' + uuid + '"]');
 				const hand = doc.querySelector('[data-action-type="hand-raised"][data--u-u-i-d="' + uuid + '"]');
 				out.push({
@@ -794,33 +978,53 @@
 
 	let lastSnapshot = "";
 	let lastGreen = [], lastMain = [];
-	let statPump = 0;
+
+	// when the same guest shows up in both rooms (mid-transfer race, or a zombie rpc the
+	// liveness check couldn't catch), the room we saw them enter most recently wins
+	const firstSeen = { green: {}, main: {} };
+	function stampAndPrune(list, room) {
+		const now = Date.now(), cur = new Set();
+		list.forEach(g => { cur.add(g.sid); if (!(g.sid in firstSeen[room])) firstSeen[room][g.sid] = now; });
+		Object.keys(firstSeen[room]).forEach(sid => { if (!cur.has(sid)) delete firstSeen[room][sid]; });
+	}
+	function dedupeRooms(green, main) {
+		stampAndPrune(green, "green");
+		stampAndPrune(main, "main");
+		const dupes = green.filter(g => main.some(m => m.sid === g.sid)).map(g => g.sid);
+		let g2 = green, m2 = main;
+		dupes.forEach(sid => {
+			if (firstSeen.green[sid] >= firstSeen.main[sid]) m2 = m2.filter(x => x.sid !== sid);
+			else g2 = g2.filter(x => x.sid !== sid);
+		});
+		return [g2, m2];
+	}
+
+	const EMPTY_GREEN = '<div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div>';
+	const EMPTY_MAIN = '<div class="emptyNote">Nobody on air. Move guests here from the green room when it\'s showtime.</div>';
+
 	function refreshGuests() {
-		// nudge fresh connection stats every ~8s so the health dots stay honest
-		if (++statPump % 4 === 0) {
-			Studio.send($("dirGreen"), { getRemoteStats: true });
-			Studio.send($("dirMain"), { getRemoteStats: true });
-		}
-		const green = lastGreen = readGuests($("dirGreen"));
-		const main = lastMain = readGuests($("dirMain"));
+		let green = readGuests($("dirGreen"));
+		let main = readGuests($("dirMain"));
+		[green, main] = dedupeRooms(green, main);
+		lastGreen = green; lastMain = main;
 		maybeAutoRecord(main);
 		const waiting = green.filter(g => g.queued).length;
 		const badge = $("greenBadge");
 		badge.textContent = waiting;
 		badge.classList.toggle("show", waiting > 0);
-		$("cntGreen").textContent = green.length;
-		$("cntMain").textContent = main.length;
+		$("cntGreen").textContent = $("cntGreenTab").textContent = green.length;
+		$("cntMain").textContent = $("cntMainTab").textContent = main.length;
 
 		const snap = JSON.stringify([green, main]);
 		if (snap === lastSnapshot) return; // avoid pointless re-render (keeps buttons clickable)
 		lastSnapshot = snap;
 
-		$("listGreen").innerHTML = green.length
-			? green.map(g => guestCardHtml(g, "green")).join("")
-			: '<div class="emptyNote">No one here yet. Guests appear the moment they open their invite link.</div>';
-		$("listMain").innerHTML = main.length
-			? main.map(g => guestCardHtml(g, "main")).join("")
-			: '<div class="emptyNote">Nobody on air. Move guests here from the green room when it\'s showtime.</div>';
+		const greenHtml = green.length ? green.map(g => guestCardHtml(g, "green")).join("") : EMPTY_GREEN;
+		const mainHtml = main.length ? main.map(g => guestCardHtml(g, "main")).join("") : EMPTY_MAIN;
+		$("listGreen").innerHTML = greenHtml;
+		$("listGreenTab").innerHTML = greenHtml;
+		$("listMain").innerHTML = mainHtml;
+		$("listMainTab").innerHTML = mainHtml;
 	}
 
 	/* ---------- guest actions ---------- */
@@ -829,13 +1033,19 @@
 		if (!btn) return;
 		const card = btn.closest(".guestCard");
 		const sid = card.dataset.sid;
-		const inGreen = !!card.closest("#listGreen");
+		const holder = btn.closest("[data-guestlist]");
+		const inGreen = !holder || holder.dataset.guestlist === "green";
 		const frame = inGreen ? $("dirGreen") : $("dirMain");
 		const act = btn.dataset.act;
 
 		if (act === "admit") {
 			clickDirectorButton(frame, sid, "remove-queue");
 			Studio.toast("Guest admitted to the green room");
+			// Hold-queue guests stay invisible to OBS scene & solo viewers even after being
+			// activated — a same-room transfer forces a clean rejoin (VDO strips the hold
+			// flag on transfer), which re-seeds them for every viewer. Guests just see a
+			// brief reconnect while still on the waiting-room overlay.
+			setTimeout(() => Studio.send(frame, { action: "transfer", target: sid, value: EV.green }), 1200);
 		} else if (act === "whisper") {
 			const room = inGreen ? "green" : "main";
 			const uuid = card.dataset.uuid;
@@ -888,8 +1098,13 @@
 			if (toggleRecord(frame, sid)) Studio.toast("Toggled recording — files save to this computer's downloads");
 			else Studio.toast("Recording not available yet — is their video up?", true);
 		} else if (act === "solo") {
+			const g = (inGreen ? lastGreen : lastMain).find(x => x.sid === sid);
+			if (g && g.queued) {
+				Studio.toast("They're still in the waiting room — admit them first, then copy the solo link", true);
+				return;
+			}
 			const ok = await Studio.copyText(soloLink(sid, inGreen ? EV.green : EV.main));
-			Studio.toast(ok ? "Solo link copied — paste into an OBS browser source" : "Copy failed", !ok);
+			Studio.toast(ok ? "Solo link copied for the " + (inGreen ? "green room" : "broadcast") + " — re-copy it if they change rooms" : "Copy failed", !ok);
 		} else if (act === "kick") {
 			if (!confirm("Disconnect this guest?")) return;
 			Studio.send(frame, { action: "hangup", target: sid });
