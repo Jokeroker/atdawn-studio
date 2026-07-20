@@ -259,7 +259,8 @@
 	if (EV.ask) $("pwdField").classList.remove("hidden");
 	if (EV.o && EV.o.pa) $("paNote").classList.remove("hidden"); // pro audio → headphones reminder
 
-	const savedName = localStorage.getItem("studio_guest_name");
+	// Personal invites (from the Guest Links tab) carry the guest's name so it's pre-filled.
+	const savedName = EV.gn || localStorage.getItem("studio_guest_name");
 	if (savedName) $("guestName").value = savedName;
 
 	/* ---------- state ---------- */
@@ -372,7 +373,9 @@
 		if (EV.ask && !pwd) { $("lobbyErr").textContent = "Please enter the event password."; return; }
 		localStorage.setItem("studio_guest_name", name);
 
-		const sid = Studio.slugName(name) + "_" + Studio.randId(4);
+		// A personal invite pins a fixed stream ID so the producer can pre-load this guest's
+		// OBS solo source before they ever join. Ad-hoc invites still get a random suffix.
+		const sid = EV.sid ? Studio.sanitizeId(EV.sid) : (Studio.slugName(name) + "_" + Studio.randId(4));
 		const params = {
 			room: EV.g,
 			push: sid,

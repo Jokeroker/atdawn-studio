@@ -83,6 +83,32 @@ go on air they get a persistent red **ON AIR** pill in the top bar plus a brief 
 border **flash** (it pulses when they go live, then fades — it doesn't frame the whole
 call the entire time). Cues from the control room appear as a single styled banner.
 
+## Guest Links — permanent, preloadable links (Guest Links tab)
+
+For repeat events you can build everything **before** show day instead of copying links
+while guests trickle in:
+
+1. In the **Guest Links** tab, add each guest by name. Every guest gets a stable **on-air
+   ID** derived from their name (e.g. *Jane Smith → `Jane_Smith`*) that never changes.
+2. Copy each guest's **personal invite** (their name is pre-filled) and send it to them.
+3. Copy each guest's **OBS solo link** — or use **Copy all broadcast OBS links** — and
+   preload them as browser sources in OBS ahead of time. They sit dark until needed.
+4. On the day: when you send a guest to broadcast, their **pre-loaded OBS source lights up
+   automatically** — no copying stream IDs mid-show.
+
+The links stay valid as long as you keep the same rooms, so they survive across events.
+Two things to know:
+
+- **Keep your room names fixed.** The links are tied to your current green/broadcast rooms.
+  Running **New event** in Settings generates fresh rooms and invalidates them. For a truly
+  permanent setup across machines, set your room names once in Settings (or in
+  `studio/config.js` `defaults`) and leave them.
+- The roster lives in your browser. The links themselves are reproducible from the guest's
+  name + your rooms, so re-adding the same name anywhere regenerates the identical links.
+
+Ad-hoc guests still work exactly as before — the plain **Guest invite link** on the
+Overview gives each walk-up guest a random ID.
+
 ## Room tabs (Green Room / Main Broadcast)
 
 Each room has its own studio-styled tab — no raw VDO.Ninja UI anywhere:

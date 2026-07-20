@@ -230,6 +230,19 @@
 	#engineHold { position: fixed; left: -9999px; top: 0; width: 640px; height: 360px; opacity: 0; pointer-events: none; }
 	#engineHold iframe { width: 100%; height: 100%; border: 0; }
 
+	/* ----- guest links roster ----- */
+	.rosterRow {
+		display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+		background: var(--surface); border: 1px solid var(--line);
+		border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px;
+		box-shadow: var(--shadow-1);
+	}
+	.rosterRow .who { min-width: 150px; flex: 1; }
+	.rosterRow .who b { display: block; font-size: 0.95rem; font-weight: 650; }
+	.rosterRow .who .sid { font-size: 0.72rem; color: var(--text-faint); font-family: "Cascadia Code", Consolas, monospace; }
+	.rosterRow .racts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+	.rosterEmpty { color: var(--text-faint); font-size: 0.9rem; padding: 26px 18px; text-align: center; border: 1px dashed var(--line); border-radius: var(--r-md); line-height: 1.6; }
+
 	/* ----- popover menu ----- */
 	#popMenu {
 		position: fixed; z-index: 300;
@@ -269,6 +282,7 @@
 		<button class="navItem active" data-view="overview"><i class="las la-home"></i> Overview &amp; Links</button>
 		<button class="navItem" data-view="green"><i class="las la-couch"></i> Green Room <span class="badge" id="greenBadge">0</span></button>
 		<button class="navItem" data-view="mainstage"><i class="las la-broadcast-tower"></i> Main Broadcast</button>
+		<button class="navItem" data-view="roster"><i class="las la-address-book"></i> Guest Links</button>
 		<button class="navItem" data-view="settings"><i class="las la-cog"></i> Settings</button>
 		<div class="foot">
 			<button class="btn sm block" id="logoutBtn"><i class="las la-sign-out-alt"></i> Log out</button>
@@ -396,6 +410,31 @@
 					<div class="monTag" id="tagMain"><span class="hdot"></span> <span>Monitor · silent — press Listen to hear</span></div>
 				</div>
 				<div class="roomGuests" data-guestlist="main" id="listMainTab"><div class="emptyNote">Nobody on air. Move guests here from the green room when it's showtime.</div></div>
+			</div>
+		</div>
+
+		<!-- ---------- GUEST LINKS (ROSTER) ---------- -->
+		<div class="view pad" id="view-roster">
+			<h2 class="viewTitle">Guest Links</h2>
+			<div class="card" style="max-width:900px; margin-bottom:22px">
+				<h3><i class="las la-magic"></i> Pre-build your show — before the event</h3>
+				<p class="small muted" style="line-height:1.65">Add each guest here to get a <b>personal invite link</b> and a matching <b>OBS solo-feed link</b> that never change. Preload the OBS links into your scene ahead of time and send each guest their invite — on the day, the moment you send a guest to broadcast their OBS source lights up automatically. No copying links mid-show.</p>
+				<div class="field" style="margin-top:8px"><label>Add a guest (their on-screen name)</label>
+					<div style="display:flex; gap:8px">
+						<input type="text" id="rosterName" maxlength="40" placeholder="e.g. Jane Smith" style="flex:1" />
+						<button class="btn primary" id="rosterAdd" style="flex:none"><i class="las la-plus"></i> Add</button>
+					</div>
+				</div>
+				<p class="small muted" id="rosterRoomsNote" style="line-height:1.6; margin-bottom:0"></p>
+			</div>
+
+			<div id="rosterList" style="max-width:900px"></div>
+
+			<div class="card hidden" id="rosterBulkCard" style="max-width:900px; margin-top:20px">
+				<h3><i class="las la-photo-video"></i> Bulk OBS setup</h3>
+				<p class="small muted" style="line-height:1.6">Copy every guest's broadcast solo link at once — paste them into OBS as browser sources (1920×1080, "Control audio via OBS").</p>
+				<button class="btn" id="rosterCopyAllObs"><i class="las la-copy"></i> Copy all broadcast OBS links</button>
+				<button class="btn" id="rosterCopyAllInvites"><i class="las la-copy"></i> Copy all invite links</button>
 			</div>
 		</div>
 
@@ -548,6 +587,7 @@
 		$("setRecMode").value = String(EV.recMode);
 		$("setApiKey").value = EV.apiKey || "";
 		renderApiInfo();
+		renderRoster(); // roster links depend on the current rooms
 	}
 
 	function directorUrl(room, forEngine) {
@@ -624,7 +664,7 @@
 	});
 
 	/* ================= LINKS ================= */
-	function guestLink() {
+	function buildInvite(extra) {
 		const payload = { v: 1, n: EV.name, b: CFG.brandName, g: EV.green, m: EV.main, ask: !!EV.ask };
 		if (!EV.ask) payload.p = EV.pwd;
 		// feature flags baked into the invite (join.html translates them to VDO params)
@@ -635,8 +675,14 @@
 		if (EV.dirChat) o.dc = 1;
 		if (EV.captions) o.ts = 1;
 		if (Object.keys(o).length) payload.o = o;
+		if (extra) Object.assign(payload, extra); // e.g. { sid, gn } for a personal invite
 		return new URL("join.html?e=" + Studio.b64uEncode(payload), location.href).href;
 	}
+	function guestLink() { return buildInvite(); }
+	// A named guest gets a STABLE stream id derived from their name, so their OBS solo
+	// link is known before they ever join. gn pre-fills their name on the join page.
+	function rosterSid(name) { return Studio.slugName(name); }
+	function personalInvite(name) { return buildInvite({ sid: rosterSid(name), gn: name }); }
 	function obsExtras(p) {
 		if (EV.proAudio) p.proaudio = null;    // must match the guest side for 256kbps stereo passthrough
 		if (EV.captions) p.closedcaptions = null;
@@ -681,6 +727,81 @@
 		EV.autoRec = $("autoRecChk").checked;
 		saveEvent();
 		Studio.toast(EV.autoRec ? "Guests will auto-record while on air" : "Auto-record off");
+	});
+
+	/* ================= GUEST LINKS (ROSTER) ================= */
+	// A simple, name-based roster stored in this browser. Each guest's links are derived
+	// deterministically from their name + the current rooms, so they're reproducible and
+	// stable — preload them into OBS and send invites before the event.
+	let ROSTER = [];
+	try { ROSTER = JSON.parse(localStorage.getItem("studio_roster_v1")) || []; } catch (e) {}
+	function saveRoster() { localStorage.setItem("studio_roster_v1", JSON.stringify(ROSTER)); }
+
+	function rosterRowHtml(name, i) {
+		return `<div class="rosterRow" data-idx="${i}">
+			<div class="who"><b>${escapeHtml(name)}</b><span class="sid">on air ID: ${escapeHtml(rosterSid(name))}</span></div>
+			<div class="racts">
+				<button class="btn sm primary" data-ract="invite"><i class="las la-link"></i> Guest invite</button>
+				<button class="btn sm" data-ract="obsMain"><i class="las la-broadcast-tower"></i> OBS solo (broadcast)</button>
+				<button class="btn sm" data-ract="obsGreen"><i class="las la-couch"></i> OBS solo (green)</button>
+				<button class="btn sm icon danger" data-ract="del" title="Remove from roster"><i class="las la-times"></i></button>
+			</div>
+		</div>`;
+	}
+	function renderRoster() {
+		const list = $("rosterList");
+		list.innerHTML = ROSTER.length
+			? ROSTER.map((n, i) => rosterRowHtml(n, i)).join("")
+			: '<div class="rosterEmpty">No guests yet. Add your line-up above to generate their invite &amp; OBS links.</div>';
+		$("rosterBulkCard").classList.toggle("hidden", !ROSTER.length);
+		$("rosterRoomsNote").innerHTML = "These links point at <b>" + escapeHtml(EV.main) + "</b> (broadcast) and <b>" + escapeHtml(EV.green) +
+			"</b> (green). They stay valid as long as you keep the same rooms — don't run <b>New event</b> in Settings, or they'll all change.";
+	}
+	$("rosterAdd").addEventListener("click", addRosterGuest);
+	$("rosterName").addEventListener("keydown", e => { if (e.key === "Enter") addRosterGuest(); });
+	function addRosterGuest() {
+		const name = $("rosterName").value.trim();
+		if (!name) return;
+		const sid = rosterSid(name);
+		if (!sid) { Studio.toast("Please use letters or numbers in the name", true); return; }
+		if (ROSTER.some(n => rosterSid(n) === sid)) { Studio.toast("A guest with that name (or one too similar) already exists", true); return; }
+		ROSTER.push(name);
+		saveRoster();
+		$("rosterName").value = "";
+		renderRoster();
+		Studio.toast("Added " + name + " — copy their links below");
+	}
+	$("rosterList").addEventListener("click", async e => {
+		const btn = e.target.closest("[data-ract]");
+		if (!btn) return;
+		const name = ROSTER[+btn.closest(".rosterRow").dataset.idx];
+		if (name === undefined) return;
+		const act = btn.dataset.ract;
+		if (act === "del") {
+			if (!confirm("Remove " + name + " from the roster? (Their links stop being pre-listed; you can re-add the same name any time to get the identical links.)")) return;
+			ROSTER = ROSTER.filter(n => n !== name);
+			saveRoster();
+			renderRoster();
+			return;
+		}
+		let link = "", what = "";
+		if (act === "invite") { link = personalInvite(name); what = "Personal invite for " + name + " copied — send it to them"; }
+		else if (act === "obsMain") { link = soloLink(rosterSid(name), EV.main); what = "Broadcast OBS solo link for " + name + " copied"; }
+		else if (act === "obsGreen") { link = soloLink(rosterSid(name), EV.green); what = "Green-room OBS solo link for " + name + " copied"; }
+		const ok = await Studio.copyText(link);
+		Studio.toast(ok ? what : "Copy failed", !ok);
+	});
+	$("rosterCopyAllObs").addEventListener("click", async () => {
+		if (!ROSTER.length) return;
+		const all = ROSTER.map(n => soloLink(rosterSid(n), EV.main)).join("\n");
+		const ok = await Studio.copyText(all);
+		Studio.toast(ok ? ROSTER.length + " broadcast OBS links copied (one per line)" : "Copy failed", !ok);
+	});
+	$("rosterCopyAllInvites").addEventListener("click", async () => {
+		if (!ROSTER.length) return;
+		const all = ROSTER.map(n => n + ": " + personalInvite(n)).join("\n");
+		const ok = await Studio.copyText(all);
+		Studio.toast(ok ? ROSTER.length + " invite links copied (name: link)" : "Copy failed", !ok);
 	});
 
 	/* ---------- guest feature toggles ---------- */
