@@ -496,7 +496,7 @@
 		renderApiInfo();
 	}
 
-	function directorUrl(room) {
+	function directorUrl(room, forEngine) {
 		// push id "dir_<room>_<rand>": guests identify which room they're in by this
 		// prefix (see join.html). Random suffix so co-producer dashboards never collide.
 		return Studio.buildUrl(Studio.vdoBase(), {
@@ -507,13 +507,17 @@
 			codirector: cdPass(),
 			hidetranslate: null,
 			tips: 0,
+			// the embedded engines never capture a camera: Talk is audio-only, so the
+			// browser only asks for the mic and guests never get a Control Room video
+			// feed (press2talk otherwise grabs the default camera and keeps sending it)
+			videodevice: forEngine ? 0 : false,
 			// Stream Deck / Companion remote control — one key per room
 			api: EV.apiKey ? EV.apiKey + (room === EV.green ? "_green" : "_main") : false
 		});
 	}
 	function mountDirectors() {
-		$("dirGreen").src = directorUrl(EV.green);
-		$("dirMain").src = directorUrl(EV.main);
+		$("dirGreen").src = directorUrl(EV.green, true);
+		$("dirMain").src = directorUrl(EV.main, true);
 		talk.green = talk.main = "off"; // fresh frames = mic state reset
 		listen.green = listen.main = false; // fresh frames = speakers muted again
 		renderTalkButtons();

@@ -403,7 +403,11 @@
 	}
 
 	/* ---------- hide VDO's own control bar; we provide our own ---------- */
-	const CHROME_HIDE_CSS = "#controlButtons, #header, #translateButton, #reportbutton { display: none !important; }";
+	// Also hide any Control Room video tile: producers are heard (Talk/whisper) but
+	// never seen — their director streams all use "dir_"-prefixed stream IDs.
+	const CHROME_HIDE_CSS =
+		"#controlButtons, #header, #translateButton, #reportbutton { display: none !important; }" +
+		' video[data-sid^="dir_"], div:has(> video[data-sid^="dir_"]) { display: none !important; }';
 	iframe.addEventListener("load", () => {
 		if (!iframe.src) return;
 		setTimeout(() => Studio.send(iframe, { style: CHROME_HIDE_CSS }), 800);
