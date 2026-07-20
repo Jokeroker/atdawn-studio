@@ -60,9 +60,11 @@ OBS scene** — the stream cannot hear or see any of this:
   desk: listening to one room stops the other. Works identically for co-producers on
   their own dashboards (each listens locally).
 - **🎙️ Talk** (per room): your mic to everyone in that room. First use asks for browser
-  mic permission. Click again to stop. Classic use: "we're live in 30 seconds" to the
-  green room, or producer notes to the on-air panel (audience hears nothing — though if
-  a live guest replies out loud, the stream hears *them*).
+  mic permission (mic only — the control room never sends a camera). Click again to stop.
+  You stay **completely invisible** to guests: no video tile, no name in their roster, no
+  change to the group layout — they only hear you. Classic use: "we're live in 30 seconds"
+  to the green room, or producer notes to the on-air panel (audience hears nothing — though
+  if a live guest replies out loud, the stream hears *them*).
 - **🎧 Whisper** (per guest): IFB-style — only that one guest hears you, even mid-show.
   Automatically turns off any other whisper/room-talk in that room.
 - **📣 Cue** (per guest or per room): canned or custom messages that appear as a large
