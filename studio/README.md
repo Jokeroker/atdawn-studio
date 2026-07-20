@@ -76,9 +76,10 @@ OBS scene** — the stream cannot hear or see any of this:
 ## Guest tools
 
 Guests get: mic, camera, **background blur**, **✋ raise hand** (shows instantly on your
-guest board with an amber highlight), chat, settings (device switching), leave. If the
-producer enables the **on-air tally**, a red indicator lights up on the guest's screen
-whenever their feed is actually live in an OBS scene.
+guest board with an amber highlight), chat, settings (device switching), leave. When they
+go on air they get a persistent red **ON AIR** pill in the top bar plus a brief green
+border **flash** (it pulses when they go live, then fades — it doesn't frame the whole
+call the entire time). Cues from the control room appear as a single styled banner.
 
 ## Room tabs (Green Room / Main Broadcast)
 
@@ -92,6 +93,15 @@ Each room has its own studio-styled tab — no raw VDO.Ninja UI anywhere:
 - **Advanced**: opens VDO.Ninja's full director console in a new tab for the rare
   per-guest deep controls (gain, EQ, bitrate caps, scene assignment). Everyday actions
   never need it.
+
+## Live monitors (Overview)
+
+Below the link cards, the Overview shows a **live video thumbnail for every connected
+guest** — waiting-room, green room, and on-air — each with their name and a room badge
+(yellow *Waiting* / green *Green* / red pulsing *On air*). It's a silent video preview:
+audio still comes only from the **Listen** button, so nothing here can leak into the mix.
+The feeds are mirrored straight from the control room's own connections, so they cost no
+extra guest bandwidth beyond what the dashboard already receives.
 
 ## Guest board extras
 

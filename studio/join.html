@@ -405,9 +405,18 @@
 	/* ---------- hide VDO's own control bar; we provide our own ---------- */
 	// Also hide any Control Room video tile: producers are heard (Talk/whisper) but
 	// never seen — their director streams all use "dir_"-prefixed stream IDs.
+	// #overlayMsgs is VDO's own raw white chat/cue text — we render cues as our own
+	// styled banner from the gotChat event, so suppress VDO's copy to avoid doubles.
+	//
+	// VDO's tally puts a permanent green inset box-shadow on #main (.onair). We keep the
+	// "you're on stage" signal but make it a brief flash instead of a constant frame:
+	// the animation replays every time .onair is (re)applied, then settles to nothing.
+	// Our own persistent ON AIR pill in the top bar carries the ongoing status.
 	const CHROME_HIDE_CSS =
-		"#controlButtons, #header, #translateButton, #reportbutton { display: none !important; }" +
-		' video[data-sid^="dir_"], div:has(> video[data-sid^="dir_"]) { display: none !important; }';
+		"#controlButtons, #header, #translateButton, #reportbutton, #overlayMsgs { display: none !important; }" +
+		' video[data-sid^="dir_"], div:has(> video[data-sid^="dir_"]) { display: none !important; }' +
+		" #main.onair { box-shadow: none !important; animation: adOnAirFlash 2.8s ease-out 1 !important; }" +
+		" @keyframes adOnAirFlash { 0%,55% { box-shadow: inset 0 0 max(10vw,10vh) green; } 100% { box-shadow: inset 0 0 0 rgba(0,128,0,0); } }";
 	iframe.addEventListener("load", () => {
 		if (!iframe.src) return;
 		setTimeout(() => Studio.send(iframe, { style: CHROME_HIDE_CSS }), 800);

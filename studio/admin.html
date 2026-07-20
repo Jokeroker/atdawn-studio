@@ -147,6 +147,55 @@
 	.optionsLine { display: flex; gap: 10px 28px; flex-wrap: wrap; margin-top: 18px; max-width: 1240px; }
 	.optionsLine .checkline { font-size: 0.78rem; }
 
+	/* ----- live monitor strip (overview) ----- */
+	#monitorSection { max-width: 1240px; margin-top: 32px; }
+	.monHead {
+		display: flex; gap: 9px; align-items: center;
+		font-size: 0.74rem; letter-spacing: 0.12em; color: var(--text-dim);
+		text-transform: uppercase; margin-bottom: 12px; font-weight: 700;
+	}
+	.monHead i.las { font-size: 1.05rem; color: var(--accent); }
+	.monHead .monHint { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text-faint); font-size: 0.72rem; margin-left: auto; }
+	.monHead .monHint b { color: var(--text-dim); font-weight: 700; }
+	#monitorStrip { display: flex; flex-wrap: wrap; gap: 14px; }
+	#monitorStrip .emptyNote { flex: 1; }
+	.monTile {
+		position: relative; width: 232px; aspect-ratio: 16 / 9; flex: none;
+		border-radius: var(--r-md); overflow: hidden; background: #090c12;
+		border: 1px solid var(--line); box-shadow: var(--shadow-1);
+		transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+	}
+	.monTile.live { border-color: rgba(255, 87, 87, 0.65); box-shadow: 0 0 18px rgba(255, 87, 87, 0.22); }
+	.monTile.waiting { border-color: rgba(245, 193, 90, 0.5); }
+	.monTile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #090c12; }
+	.monTile .noVid {
+		position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+		background: radial-gradient(120px 80px at 50% 42%, rgba(246,167,92,0.09), transparent 70%);
+		color: var(--accent); font-weight: 800; font-size: 1.1rem; letter-spacing: 0.03em;
+	}
+	.monTile .noVid span {
+		width: 46px; height: 46px; border-radius: 50%;
+		display: flex; align-items: center; justify-content: center;
+		background: var(--accent-soft); border: 1px solid rgba(246,167,92,0.3);
+	}
+	.monTile .nm {
+		position: absolute; left: 0; bottom: 0; max-width: 85%;
+		background: rgba(10, 13, 20, 0.78); backdrop-filter: blur(6px);
+		color: var(--text); font-size: 0.8rem; font-weight: 600;
+		padding: 3px 10px 4px 10px; border-top-right-radius: 8px;
+		white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+	}
+	.monTile .rm {
+		position: absolute; right: 7px; top: 7px; z-index: 2;
+		font-size: 0.56rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+		padding: 2px 7px; border-radius: 999px; backdrop-filter: blur(8px);
+		display: flex; align-items: center; gap: 4px;
+	}
+	.monTile .rm.g { background: rgba(67,217,154,0.16); color: var(--good); border: 1px solid rgba(67,217,154,0.4); }
+	.monTile .rm.m { background: rgba(255,87,87,0.16); color: #ff8383; border: 1px solid rgba(255,87,87,0.45); }
+	.monTile .rm.w { background: rgba(245,193,90,0.16); color: var(--warn); border: 1px solid rgba(245,193,90,0.4); }
+	.monTile .rm.m .rmdot { width: 6px; height: 6px; border-radius: 50%; background: #ff5757; animation: pulse 1.2s infinite; }
+
 	/* ----- room tabs (studio pass) ----- */
 	.roomTools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 	.btn.listen.active {
@@ -285,6 +334,11 @@
 					<b><i class="las la-headset"></i> Solo feeds</b>
 					<span>Per-guest OBS source with its own audio fader — press <b style="font-size:inherit">Solo link</b> on any guest card above. Re-copy it if the guest changes rooms.</span>
 				</div>
+			</div>
+
+			<div id="monitorSection">
+				<h3 class="monHead"><i class="las la-eye"></i> Live monitors <span class="cnt" id="cntMon">0</span> <span class="monHint">muted preview · press <b>Listen</b> above to hear a room</span></h3>
+				<div id="monitorStrip"><div class="emptyNote">Guests' live video appears here the moment they connect — no need to open a room tab.</div></div>
 			</div>
 
 			<div class="optionsLine">
@@ -1018,6 +1072,7 @@
 		badge.classList.toggle("show", waiting > 0);
 		$("cntGreen").textContent = $("cntGreenTab").textContent = green.length;
 		$("cntMain").textContent = $("cntMainTab").textContent = main.length;
+		refreshMonitors(); // runs every poll — guest video comes up a beat after the card
 
 		const snap = JSON.stringify([green, main]);
 		if (snap === lastSnapshot) return; // avoid pointless re-render (keeps buttons clickable)
@@ -1029,6 +1084,89 @@
 		$("listGreenTab").innerHTML = greenHtml;
 		$("listMain").innerHTML = mainHtml;
 		$("listMainTab").innerHTML = mainHtml;
+	}
+
+	/* ================= LIVE MONITOR STRIP ================= */
+	// Mirror each connected guest's inbound MediaStream (held same-origin inside the
+	// hidden director engines) into a small muted <video> on the Overview. Video only —
+	// audio monitoring stays on the Listen button, so nothing here can leak to the mix.
+	const monTiles = new Map(); // sid -> { wrap, video, stream, label, room, queued }
+
+	function liveStreamFor(frame, uuid) {
+		try {
+			const rpc = frame.contentWindow.session.rpcs[uuid];
+			const ve = rpc && rpc.videoElement;
+			if (ve && ve.srcObject && ve.srcObject.getVideoTracks().length) return ve.srcObject;
+		} catch (e) {}
+		return null;
+	}
+
+	function refreshMonitors() {
+		const strip = $("monitorStrip");
+		// build the desired set: everyone in both rooms, on-air first
+		const want = [];
+		lastMain.forEach(g => want.push({ g, room: "main", frame: $("dirMain") }));
+		lastGreen.forEach(g => want.push({ g, room: "green", frame: $("dirGreen") }));
+		const wantSids = new Set(want.map(w => w.g.sid));
+
+		// drop tiles for guests who left
+		for (const [sid, t] of monTiles) {
+			if (!wantSids.has(sid)) {
+				try { t.video.srcObject = null; } catch (e) {}
+				t.wrap.remove();
+				monTiles.delete(sid);
+			}
+		}
+
+		want.forEach(({ g, room, frame }) => {
+			let t = monTiles.get(g.sid);
+			if (!t) {
+				const wrap = document.createElement("div");
+				wrap.className = "monTile";
+				const video = document.createElement("video");
+				video.autoplay = true; video.muted = true; video.playsInline = true;
+				const noVid = document.createElement("div");
+				noVid.className = "noVid"; noVid.innerHTML = "<span></span>";
+				const nm = document.createElement("div");
+				nm.className = "nm";
+				const rm = document.createElement("div");
+				rm.className = "rm";
+				wrap.append(video, noVid, nm, rm);
+				strip.appendChild(wrap);
+				t = { wrap, video, noVid, nm, rm, stream: null, label: null, room: null, queued: null };
+				monTiles.set(g.sid, t);
+			}
+			// attach / re-attach the live stream only when it actually changes (avoids flicker).
+			// Waiting-room guests use &holdwithvideo, so the director engine sees them too.
+			const stream = liveStreamFor(frame, g.uuid);
+			if (stream !== t.stream) {
+				t.stream = stream;
+				try { t.video.srcObject = stream; } catch (e) {}
+				if (stream) t.video.play().catch(() => {});
+			}
+			const hasVid = !!stream;
+			t.video.style.display = hasVid ? "block" : "none";
+			t.noVid.style.display = hasVid ? "none" : "flex";
+			if (!hasVid) t.noVid.querySelector("span").textContent = initials(g.label);
+			// labels & room ring (only touch DOM on change)
+			if (g.label !== t.label) { t.nm.textContent = g.label; t.label = g.label; }
+			const roomKey = g.queued ? "w" : (room === "main" ? "m" : "g");
+			const roomTxt = g.queued ? "Waiting" : (room === "main" ? '<span class="rmdot"></span> On air' : "Green");
+			const stateKey = roomKey + (hasVid ? "1" : "0");
+			if (stateKey !== t.room) {
+				t.room = stateKey;
+				t.rm.className = "rm " + roomKey;
+				t.rm.innerHTML = roomTxt;
+				t.wrap.classList.toggle("live", room === "main" && !g.queued);
+				t.wrap.classList.toggle("waiting", !!g.queued);
+			}
+		});
+
+		$("cntMon").textContent = want.length;
+		strip.querySelector(".emptyNote") && (strip.querySelector(".emptyNote").style.display = want.length ? "none" : "block");
+		if (!want.length && !strip.querySelector(".emptyNote")) {
+			strip.innerHTML = '<div class="emptyNote">Guests\' live video appears here the moment they connect — no need to open a room tab.</div>';
+		}
 	}
 
 	/* ---------- guest actions ---------- */
